@@ -1,0 +1,3 @@
+##**_Bachelor thesis_** repository
+
+This repository's contains bachelor thesis ...
