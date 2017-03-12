@@ -14,11 +14,10 @@
 
 typedef std::vector<DataPoint *> vector_t;
 
-class DBScan
-{
+class DBScan {
 public:
 	DBScan();
-	virtual ~DBScan();
+    ~DBScan();
 
 	int m_imgCols;
 	int m_imgRows;
@@ -38,11 +37,13 @@ public:
 
 private:
 
-	bool isInRadius(DataPoint *investigated, DataPoint *potNeighbour, double epsilon) const;
+	bool isInRadius(DataPoint* seed, DataPoint* center, DataPoint* potN, double epsilon) const;
+    void assessNeighbour(DataPoint* dp, DataPoint* seed, DataPoint* center, vector_t& vector, double epsilon);
     void regionQuery(DataPoint *seed, DataPoint *center, vector_t &neighbours, double epsilon);
 	void expandCluster(DataPoint *investigated, vector_t neighbours,
 						int cluster_id, double epsilon, unsigned int minPoints);
     vector_t mergeVectors(vector_t a, vector_t b) const;
+    bool movePossible(int x, int y) const;
 
 };
 
