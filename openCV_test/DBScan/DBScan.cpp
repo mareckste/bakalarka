@@ -5,9 +5,9 @@ DBScan::DBScan() {
 
 
 DBScan::~DBScan() {
-   /* for (auto dp : m_allpoints) {
+   for (auto dp : m_allPoints) {
         delete[] dp;
-    }*/
+    }
 }
 
 /*
@@ -41,14 +41,15 @@ bool DBScan::isInRadius(DataPoint *seed, DataPoint *center, DataPoint *potN, dou
     distance_s = sqrt(pow(potN->r - seed->r, 2) + pow(potN->g - seed->g, 2)
                         + pow(potN->b - seed->b, 2));
      
-    // std::cout << "Distance: " << distance_c + distance_s << std::endl;
+    //std::cout << "Distance: " << distance_c + distance_s << std::endl;
     return ((distance_s + distance_c) <= epsilon ? true : false);
 }
 
 
 // ReSharper disable once CppMemberFunctionMayBeConst
 void DBScan::assessNeighbour(DataPoint* dp, DataPoint* seed, DataPoint* center, vector_t& neighbours, double epsilon) {
-    if (!dp->label && isInRadius(seed, center, dp, epsilon) == true) {
+    //std::cout << dp->x << " : " << dp->y << std::endl;
+    if (!dp->clusterId && !dp->label && isInRadius(seed, center, dp, epsilon) == true) {
         dp->label = DataPoint::VISITED;
         neighbours.push_back(dp);
     }
@@ -72,87 +73,64 @@ void DBScan::DBScanIteration(vector_t points, double epsilon, unsigned int maxCl
         int assigned{ 1 };
 
         while (j < neighbours.size()) {
+            
             neighbours[j]->clusterId = m_numClusters;
             assigned++;
 
             if (assigned < maxClusterPoints) {
-                regionQuery(seedPoint, neighbours[i], neighbours, epsilon);
+                regionQuery(seedPoint, neighbours[j], neighbours, epsilon);
             }
 
             j++;
+          
         }
         m_numClusters++;
+        
     }
 }
 
-    //if (currentPoint->label == DataPoint::VISITED) continue;
-
-    //currentPoint->label = m_numClusters;
-    //std::vector<DataPoint*> neighbours = regionQuery(currentPoint, epsilon);
-    //if (neighbours.size() < maxClusterPoints) {
-    //currentPoint->label = NOISE;
-    //}
-    //else {
-    //this->m_numClusters++;
-    //expandCluster(currentPoint, neighbours, m_numClusters, epsilon, maxClusterPoints);
-    //
- 
-
+  
 /* Returns all points within epsilon radius of a given point */
 void DBScan::regionQuery(DataPoint* seed, DataPoint* center, vector_t& neighbours, double epsilon) {
     auto centerX{ center->x };
-    auto centerY{ center->y };
+    auto centerY{ center->y }; //77 189
  
-    if (movePossible(centerX - 1, centerY)) { // right
+    if (movePossible(centerX, centerY + 1)) { // right
+       // std::cout << center->linIndex + 1 << std::endl; //14820
         DataPoint *dp = m_allPoints[center->linIndex + 1];
-        assessNeighbour(dp, seed, center, neighbours, epsilon);
+        if (dp != nullptr)
+            assessNeighbour(dp, seed, center, neighbours, epsilon);
     }
 
-    if (movePossible(centerX - 2, centerY - 1)) { // top
+    if (movePossible(centerX - 1, centerY)) { // top
         DataPoint *dp = m_allPoints[center->linIndex - m_imgCols];
-        assessNeighbour(dp, seed, center, neighbours, epsilon);
+        if (dp != nullptr)
+            assessNeighbour(dp, seed, center, neighbours, epsilon);
     }
 
-    if (movePossible(centerX - 1, centerY - 2)) { // left
+    if (movePossible(centerX, centerY - 1)) { // left
         DataPoint *dp = m_allPoints[center->linIndex - 1];
-        assessNeighbour(dp, seed, center, neighbours, epsilon);
+        if (dp != nullptr)
+            assessNeighbour(dp, seed, center, neighbours, epsilon);
     }
 
-    if (movePossible(centerX, centerY - 1)) { // bottom
+    if (movePossible(centerX + 1, centerY)) { // bottom
         DataPoint *dp = m_allPoints[center->linIndex + m_imgCols];
-        assessNeighbour(dp, seed, center, neighbours, epsilon);
+        if (dp != nullptr)
+            assessNeighbour(dp, seed, center, neighbours, epsilon);
     }
 
 }
 
 bool DBScan::movePossible(int x, int y) const {
-    if ((x >= 0 && x <= m_imgRows) && (y >= 0 && x <= m_imgCols))
+
+
+    if ((x >= 0 && x < m_imgRows) && (y >= 0 && y < m_imgCols)) {
+      //  std::cout << x << "  " << y << std::endl;
         return true;
+    }
     return false;
 }
-
-/* Expands cluster by seed
-*  point and its neighbourhood
-*/
-//void dbscan::expandcluster(datapoint *investigated, vector_t neighbours, 
-//							int cluster_id, double epsilon, unsigned int minpoints)
-//{
-//	for (int i = 0; i < neighbours.size(); i++) {
-//        datapoint* currentpoint = neighbours[i];
-//
-//		if (currentpoint->label != datapoint::visited) {
-//            currentpoint->label = datapoint::visited;
-//			std::vector<datapoint*> neighbours_s = regionquery(currentpoint,, epsilon);
-//			if (neighbours_s.size() >= minpoints) {
-//                neighbours =  mergevectors(neighbours, neighbours_s);
-//			}
-//		}
-//		if (currentpoint->clusterid == unlabelled) {
-//			currentpoint->clusterid = cluster_id;
-//            //printf("i: %d id: %d\n", i, cluster_id);
-//		}
-//	}
-//}
 
 /*
   Unifies 2 vectors

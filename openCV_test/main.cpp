@@ -1,16 +1,16 @@
 #include "DBScan/DBScan.h"
 
 /* Sets pixels belonging to specific cluster id to be black c*/
-void color_black(cv::Mat &image, vector_t vector) {
+void color_black(cv::Mat &image, vector_t vector, int id) {
   // cluster id which members we would like to have black coloured
-  int id = 1;
+  
   
   for (int i = 0; i < image.rows; i++) {
     for (int j = 0; j < image.cols; j++) {
       if (vector[j+i*image.cols]->clusterId == id) {
-        image.at<cv::Vec3b>(i, j)[0] = 0;
-        image.at<cv::Vec3b>(i, j)[1] = 0; 
-        image.at<cv::Vec3b>(i, j)[2] = 0;
+        image.at<cv::Vec3b>(i, j)[0] = 255 % id;
+        image.at<cv::Vec3b>(i, j)[1] = 255 % id;
+        image.at<cv::Vec3b>(i, j)[2] = 255 % id;
       }
     }
   }
@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
 
 	/* Load image*/
 	const std::string str = "C:\\Users\\stevu\\Documents\\Visual"
-		" Studio 2015\\Projects\\openCV_test\\openCV_test\\etc\\small.png";
+		" Studio 2015\\Projects\\openCV_test\\openCV_test\\etc\\logo.jpg";
 	
 	image = cv::imread(str);
 	if (!image.data) {
@@ -36,10 +36,13 @@ int main(int argc, char** argv) {
 	vector_t vector = dbs.convertToDataPoint(image, image.rows, image.cols);
   
   /* Run clustering on the vector*/
-    dbs.DBScanIteration(vector, 20, 7);
+    dbs.DBScanIteration(vector, 20, 1000);
+
+    std::cout << "CLUSTERING DONE" << std::endl;
 
   /* Label specific cluster*/
-    color_black(image, vector);
+    for (auto i = 1; i <= 100; i++) 
+        color_black(image, vector, i);
 
 	/* Declare windows to show image*/
 	cv::namedWindow("Original image");
