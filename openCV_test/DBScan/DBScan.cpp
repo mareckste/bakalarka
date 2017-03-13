@@ -1,6 +1,9 @@
 #include "DBScan.h"
+#include <memory>
 
-DBScan::DBScan() {
+DBScan::DBScan(int rows, int cols)
+    :m_numClusters{ 1 }, m_imgCols{ cols }, m_imgRows{ rows }
+{
 }
 
 
@@ -14,16 +17,14 @@ DBScan::~DBScan() {
 * Converts cv image data to vector of pointers to DataPoint
 * objects stored in current DBScan class  
 */
-std::vector<DataPoint*> DBScan::convertToDataPoint(cv::Mat image, int rows, int cols) {
-	m_imgCols = cols;
-	m_imgRows = rows;
-
-	for (auto i = 0; i < rows; i++) {
-		for (auto j = 0; j < cols; j++) {
+std::vector<DataPoint*> DBScan::convertToDataPoint(const cv::Mat& image) {
+	
+    for (auto i = 0; i < m_imgRows; i++) {
+		for (auto j = 0; j < m_imgCols; j++) {
         auto *dp = new DataPoint(i, j, image.at<cv::Vec3b>(i, j)[2], 
                                       image.at<cv::Vec3b>(i, j)[1], 
                                       image.at<cv::Vec3b>(i, j)[0], 
-                                      i * cols);
+                                      i * m_imgCols);
 		m_allPoints.push_back(dp);
 		}
 	}
@@ -47,8 +48,8 @@ bool DBScan::isInRadius(DataPoint *seed, DataPoint *center, DataPoint *potN, dou
 
 
 // ReSharper disable once CppMemberFunctionMayBeConst
-void DBScan::assessNeighbour(DataPoint* dp, DataPoint* seed, DataPoint* center, vector_t& neighbours, double epsilon) {
-    //std::cout << dp->x << " : " << dp->y << std::endl;
+void DBScan::assessNeighbour(DataPoint* dp, DataPoint* seed, DataPoint* center, vector_t& neighbours, 
+                                double epsilon) {
     if (!dp->clusterId && !dp->label && isInRadius(seed, center, dp, epsilon) == true) {
         dp->label = DataPoint::VISITED;
         neighbours.push_back(dp);
@@ -58,34 +59,36 @@ void DBScan::assessNeighbour(DataPoint* dp, DataPoint* seed, DataPoint* center, 
 /* Classic DBScan iteration steps over the set of datapoints*/
 void DBScan::DBScanIteration(vector_t points, double epsilon, unsigned int maxClusterPoints) {
     for (int i = 0; i < points.size(); i++) {
-
         DataPoint *seedPoint = m_allPoints[i];
 
         if (seedPoint->clusterId) continue;
 
         seedPoint->clusterId = m_numClusters;
-        m_labelledSet.push_back(seedPoint);
-
+      //  m_labelledSet.push_back(seedPoint);
+        
         vector_t neighbours;
+        neighbours.push_back(seedPoint);
+        
         regionQuery(seedPoint, seedPoint, neighbours, epsilon);
 
         int j{ 0 };
         int assigned{ 1 };
 
         while (j < neighbours.size()) {
-            
             neighbours[j]->clusterId = m_numClusters;
             assigned++;
 
             if (assigned < maxClusterPoints) {
                 regionQuery(seedPoint, neighbours[j], neighbours, epsilon);
             }
-
+            
             j++;
-          
         }
+
+        Cluster* currCluster = new Cluster{m_numClusters, neighbours};
+
+        m_allClusters.push_back(currCluster);
         m_numClusters++;
-        
     }
 }
 
@@ -96,7 +99,6 @@ void DBScan::regionQuery(DataPoint* seed, DataPoint* center, vector_t& neighbour
     auto centerY{ center->y }; //77 189
  
     if (movePossible(centerX, centerY + 1)) { // right
-       // std::cout << center->linIndex + 1 << std::endl; //14820
         DataPoint *dp = m_allPoints[center->linIndex + 1];
         if (dp != nullptr)
             assessNeighbour(dp, seed, center, neighbours, epsilon);
@@ -123,35 +125,47 @@ void DBScan::regionQuery(DataPoint* seed, DataPoint* center, vector_t& neighbour
 }
 
 bool DBScan::movePossible(int x, int y) const {
-
-
     if ((x >= 0 && x < m_imgRows) && (y >= 0 && y < m_imgCols)) {
-      //  std::cout << x << "  " << y << std::endl;
         return true;
     }
     return false;
 }
 
-/*
-  Unifies 2 vectors
-*/
-vector_t DBScan::mergeVectors(vector_t a, vector_t b) const
-{
-    struct PointerCompare {
-        bool operator()(const DataPoint* c, const DataPoint* d) {
-      return c->linIndex < d->linIndex;
-    }
-  };
+bool DBScan::fromDifferentCluster(DataPoint* dp, int x, int y) {
+    auto index = x * m_imgCols + y;
+    auto point = m_allPoints[index];
 
-    vector_t joinVector;
-
-    std::sort(a.begin(), a.end(), PointerCompare());
-    std::sort(b.begin(), b.end(), PointerCompare());
-
-    std::set_union(a.begin(), a.end(), b.begin(), b.end(), back_inserter(joinVector),
-                    PointerCompare());
-  
-	return joinVector;
+    return (dp == point ? false : true);
 }
 
+bool DBScan::checkBorder(DataPoint* pt) {
+    if (movePossible(pt->x, pt->y + 1) && fromDifferentCluster(pt, pt->x, pt->y + 1)) {
+        pt->border = 1;
+        return true;
+    }
 
+    if (movePossible(pt->x - 1, pt->y) && fromDifferentCluster(pt, pt->x - 1, pt->y)) {
+        pt->border = 1;
+        return true;
+    }
+
+    if (movePossible(pt->x, pt->y - 1) && fromDifferentCluster(pt, pt->x, pt->y - 1)) {
+        pt->border = 1;
+        return true;
+    }
+
+    if (movePossible(pt->x + 1, pt->y&& fromDifferentCluster(pt, pt->x + 1, pt->y))) {
+        pt->border = 1;
+        return true;
+    }
+
+    return false;
+}
+
+void DBScan::setBorderPoints() {
+    for (auto pt: m_allPoints) {
+        if (pt != nullptr) {
+            checkBorder(pt);
+        }
+    }
+}

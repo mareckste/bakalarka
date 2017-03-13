@@ -22,16 +22,16 @@ public:
     Label label;
 
   //ID of cluster the point belongs to
-	int clusterId; 
+	int clusterId;
+    int border; 
 
   //RGB channel values of the point
 	int r;
 	int g;
 	int b;
 
-  bool operator==(const DataPoint& rhs)
-  {
-    return (linIndex == rhs.linIndex);
+  bool operator==(const DataPoint& o2) const {
+      return clusterId == o2.clusterId;
   }
 
 };

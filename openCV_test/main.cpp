@@ -1,8 +1,8 @@
 #include "DBScan/DBScan.h"
 
-/* Sets pixels belonging to specific cluster id to be black c*/
+/* Sets pixels belonging to specific cluster m_id to be black c*/
 void color_black(cv::Mat &image, vector_t vector, int id) {
-  // cluster id which members we would like to have black coloured
+  // cluster m_id which members we would like to have black coloured
   
   
   for (int i = 0; i < image.rows; i++) {
@@ -31,18 +31,18 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-	DBScan dbs;
+	DBScan dbs{ image.rows, image.cols };
   /* Convert points to vector*/
-	vector_t vector = dbs.convertToDataPoint(image, image.rows, image.cols);
+	vector_t vector = dbs.convertToDataPoint(image);
   
   /* Run clustering on the vector*/
-    dbs.DBScanIteration(vector, 20, 1000);
+    dbs.DBScanIteration(vector, 20, 2000);
 
-    std::cout << "CLUSTERING DONE" << std::endl;
+    std::cout << "CLUSTERING DONE: " << dbs.m_numClusters << "CLUSTERS" << std::endl;
 
   /* Label specific cluster*/
-    for (auto i = 1; i <= 100; i++) 
-        color_black(image, vector, i);
+    /*for (auto i = 1; i <= dbs.m_numClusters; i++) 
+        color_black(image, vector, i);*/
 
 	/* Declare windows to show image*/
 	cv::namedWindow("Original image");

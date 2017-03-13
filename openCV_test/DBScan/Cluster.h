@@ -3,15 +3,21 @@
 #include <vector>
 #include <string>
 #include "DataPoint.h"
+#include "DBScan.h"
 
 /*unused so far*/
 class Cluster
 {
 public:
-	Cluster(int id);
+	Cluster(int id, vector_t points);
 
-	int id;
-	
-	std::vector<DataPoint> dataPoints;
+	int m_id;
+    int m_clusterSize;
+
+	vector_t m_clusterMemberPoints;
+
+    void addMemberPoints(vector_t dp);
+    
+
 };
 
