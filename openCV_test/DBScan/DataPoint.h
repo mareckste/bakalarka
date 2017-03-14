@@ -3,10 +3,10 @@
 class DataPoint
 {
 public:
-    typedef enum Label {
+     enum Label {
         UNLABELED,
         UNVISITED,
-        VISITED,
+        VISITED
     };
   //Constructor
 	DataPoint(int x, int y, int r, int g, int b, int width);

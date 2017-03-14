@@ -10,7 +10,8 @@
 #include <cmath>
 #include <algorithm>
 #include "DataPoint.h"
-#include "Cluster.h"
+
+class Cluster; //avoid cyclic redundancy
 
 typedef std::vector<DataPoint *> vector_t;
 typedef std::vector<Cluster *> cluster_vec_t;

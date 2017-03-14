@@ -1,5 +1,8 @@
 #include "DBScan.h"
 #include <memory>
+#include "Cluster.h"
+#include <ctime>
+#include <chrono>
 
 DBScan::DBScan(int rows, int cols)
     :m_numClusters{ 1 }, m_imgCols{ cols }, m_imgRows{ rows }
@@ -58,6 +61,9 @@ void DBScan::assessNeighbour(DataPoint* dp, DataPoint* seed, DataPoint* center, 
 
 /* Classic DBScan iteration steps over the set of datapoints*/
 void DBScan::DBScanIteration(vector_t points, double epsilon, unsigned int maxClusterPoints) {
+
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
     for (int i = 0; i < points.size(); i++) {
         DataPoint *seedPoint = m_allPoints[i];
 
@@ -85,11 +91,18 @@ void DBScan::DBScanIteration(vector_t points, double epsilon, unsigned int maxCl
             j++;
         }
 
-        Cluster* currCluster = new Cluster{m_numClusters, neighbours};
+        Cluster* currCluster = new Cluster(m_numClusters, neighbours);
 
         m_allClusters.push_back(currCluster);
         m_numClusters++;
     }
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+
+    std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::microseconds>
+                                        (end - begin).count() << std::endl;
+    std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::nanoseconds> 
+                                        (end - begin).count() << std::endl;
+    setBorderPoints();
 }
 
   
@@ -132,29 +145,32 @@ bool DBScan::movePossible(int x, int y) const {
 }
 
 bool DBScan::fromDifferentCluster(DataPoint* dp, int x, int y) {
-    auto index = x * m_imgCols + y;
+    auto index = x * ( m_imgCols ) + y;
     auto point = m_allPoints[index];
 
-    return (dp == point ? false : true);
+    if (dp->clusterId == point->clusterId) {
+        return false;
+    }
+    return true;  //(dp == point ? false : true);
 }
 
 bool DBScan::checkBorder(DataPoint* pt) {
-    if (movePossible(pt->x, pt->y + 1) && fromDifferentCluster(pt, pt->x, pt->y + 1)) {
+    if (movePossible(pt->x, pt->y + 1) && fromDifferentCluster(pt, pt->x, pt->y + 1) == true) {
         pt->border = 1;
         return true;
     }
 
-    if (movePossible(pt->x - 1, pt->y) && fromDifferentCluster(pt, pt->x - 1, pt->y)) {
+    if (movePossible(pt->x - 1, pt->y) && fromDifferentCluster(pt, pt->x - 1, pt->y) == true) {
         pt->border = 1;
         return true;
     }
 
-    if (movePossible(pt->x, pt->y - 1) && fromDifferentCluster(pt, pt->x, pt->y - 1)) {
+    if (movePossible(pt->x, pt->y - 1) && fromDifferentCluster(pt, pt->x, pt->y - 1) == true) {
         pt->border = 1;
         return true;
     }
 
-    if (movePossible(pt->x + 1, pt->y&& fromDifferentCluster(pt, pt->x + 1, pt->y))) {
+    if (movePossible(pt->x + 1, pt->y) && fromDifferentCluster(pt, pt->x + 1, pt->y) == true) {
         pt->border = 1;
         return true;
     }
