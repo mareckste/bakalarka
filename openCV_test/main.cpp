@@ -1,5 +1,5 @@
 #include <iostream>
-#include "DBScan/DBScan.h"
+#include "DBScan.h"
 
 
 void labelBorders(cv::Mat &image, vector_t vector) {
@@ -19,21 +19,20 @@ int main(int argc, char** argv) {
 
 	// load image
 	const std::string str = "C:\\Users\\stevu\\Documents\\Visual"
-		" Studio 2015\\Projects\\openCV_test\\openCV_test\\etc\\b0.jpg";
+                                " Studio 2015\\Projects\\openCV_test\\openCV_test\\etc\\b0.jpg";
 	
 	image = cv::imread(str);
 	if (!image.data) {
 		std::cout << "File not found" << std::endl;
 		return 1;
 	}
+
     image.copyTo(imageCopy);
 
 	DBScan dbs{ image.rows, image.cols };
     
-    //convert points to vector
+    //convert points to vector and run clustering
     dbs.convertToDataPoint(image);
-  
-    // run clustering
     dbs.DBScanIteration(50, 150);
 
     std::cout << "CLUSTERING DONE: " << dbs.m_numClusters << " CLUSTERS" << std::endl;

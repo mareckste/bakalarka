@@ -1,8 +1,3 @@
 ﻿  main.cpp
-  DBScan.cpp
-c:\users\stevu\documents\visual studio 2015\projects\opencv_test\opencv_test\dbscan\dbscan.cpp(90): warning C4018: '<': signed/unsigned mismatch
-  Generating Code...
-  Skipping... (no relevant changes detected)
-  Cluster.cpp
   openCV_test.vcxproj -> C:\Users\stevu\Documents\Visual Studio 2015\Projects\openCV_test\x64\Debug\openCV_test.exe
   openCV_test.vcxproj -> C:\Users\stevu\Documents\Visual Studio 2015\Projects\openCV_test\x64\Debug\openCV_test.pdb (Full PDB)

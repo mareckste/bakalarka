@@ -169,22 +169,22 @@ bool DBScan::fromDifferentCluster(DataPoint* dp, int x, int y) {
  * Assesses if the current point stands for border pixel 
  */
 bool DBScan::checkBorder(DataPoint* pt) {
-    if (movePossible(pt->x, pt->y + 1) && fromDifferentCluster(pt, pt->x, pt->y + 1) == true) {
+    if (movePossible(pt->x, pt->y + 1) && fromDifferentCluster(pt, pt->x, pt->y + 1)) {
         pt->border = 1;
         return true;
     }
 
-    if (movePossible(pt->x - 1, pt->y) && fromDifferentCluster(pt, pt->x - 1, pt->y) == true) {
+    if (movePossible(pt->x - 1, pt->y) && fromDifferentCluster(pt, pt->x - 1, pt->y)) {
         pt->border = 1;
         return true;
     }
 
-    if (movePossible(pt->x, pt->y - 1) && fromDifferentCluster(pt, pt->x, pt->y - 1) == true) {
+    if (movePossible(pt->x, pt->y - 1) && fromDifferentCluster(pt, pt->x, pt->y - 1)) {
         pt->border = 1;
         return true;
     }
 
-    if (movePossible(pt->x + 1, pt->y) && fromDifferentCluster(pt, pt->x + 1, pt->y) == true) {
+    if (movePossible(pt->x + 1, pt->y) && fromDifferentCluster(pt, pt->x + 1, pt->y)) {
         pt->border = 1;
         return true;
     }

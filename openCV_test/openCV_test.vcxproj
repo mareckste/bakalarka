@@ -74,6 +74,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>C:\Users\stevu\Documents\Visual Studio 2015\Projects\openCV_test\openCV_test\DBScan;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -106,7 +107,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(OPENCV_DIR)\lib;$(KINECTSDK20_DIR)lib\x64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OPENCV_DIR)\lib;$(KINECTSDK20_DIR)lib\x64;C:\Users\stevu\Documents\Visual Studio 2015\Projects\openCV_test\openCV_test\DBScan</AdditionalLibraryDirectories>
       <AdditionalDependencies>opencv_world310d.lib;kinect20.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
