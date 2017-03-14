@@ -1,10 +1,6 @@
 #include "DBScan/DBScan.h"
 
-/* Sets pixels belonging to specific cluster m_id to be black c*/
-void color_black(cv::Mat &image, vector_t vector) {
-  // cluster m_id which members we would like to have black coloured
-  
-  
+void labelBorders(cv::Mat &image, vector_t vector) {
   for (int i = 0; i < image.rows; i++) {
     for (int j = 0; j < image.cols; j++) {
       if (vector[j+i*image.cols]->border == 1) {
@@ -16,12 +12,10 @@ void color_black(cv::Mat &image, vector_t vector) {
   }
 }
 
-
-
 int main(int argc, char** argv) {
-	cv::Mat image;
+	cv::Mat image, imageCopy;
 
-	/* Load image*/
+	// load image
 	const std::string str = "C:\\Users\\stevu\\Documents\\Visual"
 		" Studio 2015\\Projects\\openCV_test\\openCV_test\\etc\\b0.jpg";
 	
@@ -30,21 +24,24 @@ int main(int argc, char** argv) {
 		std::cout << "File not found" << std::endl;
 		return 1;
 	}
+    image.copyTo(imageCopy);
 
 	DBScan dbs{ image.rows, image.cols };
-  /* Convert points to vector*/
-	vector_t vector = dbs.convertToDataPoint(image);
+    
+    //convert points to vector
+    dbs.convertToDataPoint(image);
   
-  /* Run clustering on the vector*/
-    dbs.DBScanIteration(vector, 100, 2000);
+    // run clustering
+    dbs.DBScanIteration(50, 150);
 
     std::cout << "CLUSTERING DONE: " << dbs.m_numClusters << " CLUSTERS" << std::endl;
 
-    color_black(image, vector);
+    // label border pixels
+    labelBorders(image, dbs.m_allPoints);
 
-	/* Declare windows to show image*/
-	cv::namedWindow("Original image");
-	cv::imshow("Original image", image);
+	// show results
+    cv::imshow("Original image", imageCopy);
+	cv::imshow("Segmented image", image);
 
 	cv::waitKey(0);
 	return 0;

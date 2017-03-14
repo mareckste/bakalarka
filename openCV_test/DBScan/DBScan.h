@@ -24,7 +24,7 @@ public:
 	int m_imgCols;
 	int m_imgRows;
 	
-    int m_minPoints;
+  //  int m_minPoints;
     int m_numClusters;
 
   
@@ -34,13 +34,13 @@ public:
 
 
 	vector_t convertToDataPoint(const cv::Mat& image);
-	void DBScanIteration(vector_t points, double epsilon, unsigned int maxPoints);
+	void DBScanIteration(double epsilon, unsigned maxClusterPoints);
 
 
 private:
 
 	bool isInRadius(DataPoint* seed, DataPoint* center, DataPoint* potN, double epsilon) const;
-    void assessNeighbour(DataPoint* dp, DataPoint* seed, DataPoint* center, vector_t& vector, double epsilon);
+    void assessNeighbour(DataPoint* dp, DataPoint* seed, DataPoint* center, vector_t& vector, double epsilon) const;
     void regionQuery(DataPoint *seed, DataPoint *center, vector_t &neighbours, double epsilon);
     bool movePossible(int x, int y) const;
     bool fromDifferentCluster(DataPoint* dp, int x, int y);
