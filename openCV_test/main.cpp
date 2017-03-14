@@ -1,4 +1,6 @@
+#include <iostream>
 #include "DBScan/DBScan.h"
+
 
 void labelBorders(cv::Mat &image, vector_t vector) {
   for (int i = 0; i < image.rows; i++) {

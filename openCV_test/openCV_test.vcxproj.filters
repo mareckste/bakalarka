@@ -38,5 +38,8 @@
     <ClInclude Include="DBScan\Cluster.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="DBScan\Defs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -1,8 +1,8 @@
 #include "DBScan.h"
-#include <memory>
 #include "Cluster.h"
 #include <ctime>
 #include <chrono>
+#include <iostream>
 
 DBScan::DBScan(int rows, int cols)
     :m_imgCols{ cols }, m_imgRows{ rows }, m_numClusters {1}
@@ -74,7 +74,6 @@ void DBScan::DBScanIteration(double epsilon, unsigned int maxClusterPoints) {
         if (seedPoint->clusterId) continue;
 
         seedPoint->clusterId = m_numClusters;
-      //  m_labelledSet.push_back(seedPoint);
         
         vector_t neighbours;
         neighbours.push_back(seedPoint);

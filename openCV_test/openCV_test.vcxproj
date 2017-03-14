@@ -154,6 +154,7 @@
     <ClInclude Include="DBScan\Cluster.h" />
     <ClInclude Include="DBScan\DataPoint.h" />
     <ClInclude Include="DBScan\DBScan.h" />
+    <ClInclude Include="DBScan\Defs.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

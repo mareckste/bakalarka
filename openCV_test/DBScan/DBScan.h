@@ -4,17 +4,8 @@
 #include <opencv2/core/core.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
 #include <opencv2/highgui/highgui.hpp>
-#include <iostream>
-#include <iterator> 
-#include <string>
-#include <cmath>
-#include <algorithm>
-#include "DataPoint.h"
+#include "Defs.h"
 
-class Cluster; //avoid cyclic redundancy
-
-typedef std::vector<DataPoint *> vector_t;
-typedef std::vector<Cluster *> cluster_vec_t;
 
 class DBScan {
 public:
@@ -24,7 +15,6 @@ public:
 	int m_imgCols;
 	int m_imgRows;
 	
-  //  int m_minPoints;
     int m_numClusters;
 
   
@@ -34,7 +24,7 @@ public:
 
 
 	vector_t convertToDataPoint(const cv::Mat& image);
-	void DBScanIteration(double epsilon, unsigned maxClusterPoints);
+	void DBScanIteration(double epsilon, unsigned int maxClusterPoints);
 
 
 private:

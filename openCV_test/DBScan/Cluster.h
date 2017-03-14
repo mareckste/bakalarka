@@ -1,5 +1,5 @@
 #pragma once
-#include "DBScan.h"
+#include "Defs.h"
 
 class Cluster
 {
