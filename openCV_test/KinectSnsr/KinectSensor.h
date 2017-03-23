@@ -19,7 +19,7 @@ public:
     void initSensor();
     void getKinectDataFrames();
     void getDepthData();
-    cv::Mat* getColorData() const;
+    void getColorData(cv::Mat& mat);
 
 private:
     IKinectSensor* m_sensor = nullptr;
@@ -32,7 +32,8 @@ private:
    // uint32_t* m_colorBuffer = nullptr;
    // uint16_t *m_depthBuffer = nullptr;
 
+    int m_colorWidth, m_colorHeight, m_depthWidth, m_deptHeight;
+    BYTE* m_colorBuffer = nullptr;
     ColorSpacePoint* m_depthToRGBA = nullptr;
-    int m_depthWidth = 0, m_depthHeight = 0;
 };
 

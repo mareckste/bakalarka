@@ -46,12 +46,13 @@ int main(int argc, char** argv) {
 	//cv::imshow("Segmented image", image);
 
     KinectSensor sensor;
-    sensor.getKinectDataFrames();
+    cv::Mat m(424, 512, CV_8UC3);
 
-    cv::Mat* mat = sensor.getColorData();
-    if (mat)
-        cv::imshow("Original image", *mat);
+    while (true) {
+        sensor.getColorData(m);
+        cv::imshow("Original image", m);
 
-	cv::waitKey(0);
+        cv::waitKey(1);
+    }
 	return 0;
 }
