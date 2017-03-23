@@ -74,7 +74,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\Users\stevu\Documents\Visual Studio 2015\Projects\openCV_test\openCV_test\DBScan;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\stevu\Documents\Visual Studio 2015\Projects\openCV_test\openCV_test\KinectSnsr;C:\Users\stevu\Documents\Visual Studio 2015\Projects\openCV_test\openCV_test\DBScan;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -107,7 +107,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(OPENCV_DIR)\lib;$(KINECTSDK20_DIR)lib\x64;C:\Users\stevu\Documents\Visual Studio 2015\Projects\openCV_test\openCV_test\DBScan</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\stevu\Documents\Visual Studio 2015\Projects\openCV_test\openCV_test\KinectSnsr;$(OPENCV_DIR)\lib;$(KINECTSDK20_DIR)lib\x64;C:\Users\stevu\Documents\Visual Studio 2015\Projects\openCV_test\openCV_test\DBScan</AdditionalLibraryDirectories>
       <AdditionalDependencies>opencv_world310d.lib;kinect20.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -149,6 +149,7 @@
     <ClCompile Include="DBScan\Cluster.cpp" />
     <ClCompile Include="DBScan\DataPoint.cpp" />
     <ClCompile Include="DBScan\DBScan.cpp" />
+    <ClCompile Include="KinectSnsr\KinectSensor.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -156,6 +157,7 @@
     <ClInclude Include="DBScan\DataPoint.h" />
     <ClInclude Include="DBScan\DBScan.h" />
     <ClInclude Include="DBScan\Defs.h" />
+    <ClInclude Include="KinectSnsr\KinectSensor.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

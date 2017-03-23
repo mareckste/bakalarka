@@ -27,6 +27,9 @@
     <ClCompile Include="DBScan\Cluster.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="KinectSnsr\KinectSensor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DBScan\DataPoint.h">
@@ -39,6 +42,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DBScan\Defs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="KinectSnsr\KinectSensor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -11,7 +11,7 @@ class DBScan {
 public:
 	DBScan(int rows, int cols);
     ~DBScan();
-
+    
 	int m_imgCols;
 	int m_imgRows;
 	

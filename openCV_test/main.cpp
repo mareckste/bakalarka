@@ -1,5 +1,6 @@
 #include <iostream>
 #include "DBScan.h"
+#include "KinectSensor.h"
 
 
 void labelBorders(cv::Mat &image, vector_t vector) {
@@ -15,34 +16,41 @@ void labelBorders(cv::Mat &image, vector_t vector) {
 }
 
 int main(int argc, char** argv) {
-	cv::Mat image, imageCopy;
+	//cv::Mat image, imageCopy;
 
-	// load image
-	const std::string str = "C:\\Users\\stevu\\Documents\\Visual"
-                                " Studio 2015\\Projects\\openCV_test\\openCV_test\\etc\\b0.jpg";
-	
-	image = cv::imread(str);
-	if (!image.data) {
-		std::cout << "File not found" << std::endl;
-		return 1;
-	}
+	//// load image
+	//const std::string str = "C:\\Users\\stevu\\Documents\\Visual"
+ //                               " Studio 2015\\Projects\\openCV_test\\openCV_test\\etc\\b0.jpg";
+	//
+	//image = cv::imread(str);
+	//if (!image.data) {
+	//	std::cout << "File not found" << std::endl;
+	//	return 1;
+	//}
 
-    image.copyTo(imageCopy);
+ //   image.copyTo(imageCopy);
 
-	DBScan dbs{ image.rows, image.cols };
-    
-    //convert points to vector and run clustering
-    dbs.convertToDataPoint(image);
-    dbs.DBScanIteration(50, 150);
+	//DBScan dbs{ image.rows, image.cols };
+ //   
+ //   //convert points to vector and run clustering
+ //   dbs.convertToDataPoint(image);
+ //   dbs.DBScanIteration(50, 150);
 
-    std::cout << "CLUSTERING DONE: " << dbs.m_numClusters << " CLUSTERS" << std::endl;
+ //   std::cout << "CLUSTERING DONE: " << dbs.m_numClusters << " CLUSTERS" << std::endl;
 
-    // label border pixels
-    labelBorders(image, dbs.m_allPoints);
+ //   // label border pixels
+ //   labelBorders(image, dbs.m_allPoints);
 
-	// show results
-    cv::imshow("Original image", imageCopy);
-	cv::imshow("Segmented image", image);
+	//// show results
+ //   cv::imshow("Original image", imageCopy);
+	//cv::imshow("Segmented image", image);
+
+    KinectSensor sensor;
+    sensor.getKinectDataFrames();
+
+    cv::Mat* mat = sensor.getColorData();
+    if (mat)
+        cv::imshow("Original image", *mat);
 
 	cv::waitKey(0);
 	return 0;
