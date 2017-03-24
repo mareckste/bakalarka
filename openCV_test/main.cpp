@@ -43,14 +43,20 @@ int main(int argc, char** argv) {
 
 	//// show results
  //   cv::imshow("Original image", imageCopy);
-	//cv::imshow("Segmented image", image);
+	//cv::imshow("Segmented image", image); 512 424
 
     KinectSensor sensor;
-    cv::Mat m(424, 512, CV_8UC3);
-
+    cv::Mat m(1080, 1920, CV_8UC3);
+    cv::Mat m1;
     while (true) {
-        sensor.getColorData(m);
-        cv::imshow("Original image", m);
+        sensor.getDepthData(m);
+       // cv::imshow("Original image", m);
+        //m.copyTo(m1);
+       /* DBScan dbs{ m.rows, m.cols };
+        dbs.convertToDataPoint(m);
+        dbs.DBScanIteration(50, 150);
+        labelBorders(m, dbs.m_allPoints);*/
+        cv::imshow("Segm image", m);
 
         cv::waitKey(1);
     }
