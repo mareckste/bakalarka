@@ -4,6 +4,9 @@
 #include <chrono>
 #include <iostream>
 
+/*
+ * Inits the class by the size of the image
+ */
 DBScan::DBScan(int rows, int cols)
     :m_imgCols{ cols }, m_imgRows{ rows }, m_numClusters {1}
 {
@@ -11,9 +14,11 @@ DBScan::DBScan(int rows, int cols)
 
 
 DBScan::~DBScan() {
-   for (auto dp : m_allPoints) {
-        delete[] dp;
-    }
+   for (auto dp : m_allPoints)
+        delete dp;
+
+    for (auto cs : m_allClusters)
+       delete cs;
 }
 
 /*
@@ -110,7 +115,8 @@ void DBScan::DBScanIteration(double epsilon, unsigned int maxClusterPoints) {
 
   
 /*
- * Look up for 4 neighbours whether possible to form segment together
+ * Looks up for 4 neighbours whether possible
+ * to form segment together
  */
 void DBScan::regionQuery(DataPoint* seed, DataPoint* center, vector_t& neighbours, double epsilon) {
     auto centerX{ center->x };
@@ -193,7 +199,7 @@ bool DBScan::checkBorder(DataPoint* pt) {
 }
 
 /*
- * Iterate over all points and mark border pixels
+ * Iterates over all points and marks border pixels
  */
 void DBScan::setBorderPoints() {
     for (auto pt: m_allPoints) {

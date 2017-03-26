@@ -17,25 +17,32 @@ public:
     ~KinectSensor();
 
     void initSensor();
-    void getKinectDataFrames();
-    void mapDepthData();
+    void mapDepthData() const;
     void getColorData(cv::Mat& mat);
     void getDepthData(cv::Mat& outputMat);
 
 private:
+    // sensor
     IKinectSensor* m_sensor = nullptr;
-    ICoordinateMapper* m_coordinateMapper = nullptr;
-   // IDepthFrameReader* m_dReader = nullptr;
-   // IColorFrameReader* m_cReader = nullptr;
-    IMultiSourceFrame* m_multiSourceFrame = nullptr;
+    
+    // frame source and reader 
+    IMultiSourceFrame* m_multiSourceFrame       = nullptr;
     IMultiSourceFrameReader* m_multiSrcFrameRdr = nullptr;
 
-   // uint32_t* m_colorBuffer = nullptr;
-   // uint16_t *m_depthBuffer = nullptr;
+    // mapper
+    ICoordinateMapper* m_coordinateMapper = nullptr;
+    
+    // sizes of images retrieved from color and depth sensor
+    int m_colorWidth    = 0;
+    int m_colorHeight   = 0;
+    int m_depthWidth    = 0;
+    int m_depthHeight   = 0;
 
-    int m_colorWidth, m_colorHeight, m_depthWidth, m_depthHeight;
-    BYTE* m_colorBuffer = nullptr;
-    UINT16* m_depthBuffer = nullptr;
+    // buffers for frame data
+    UINT8* m_colorBuffer    = nullptr;
+    UINT16* m_depthBuffer   = nullptr;
+
+    // buffers for space point mappings 
     ColorSpacePoint* m_depthToRGBA = nullptr;
     DepthSpacePoint* m_rgbaToDepth = nullptr;
 };

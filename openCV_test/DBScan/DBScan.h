@@ -12,20 +12,20 @@ public:
 	DBScan(int rows, int cols);
     ~DBScan();
     
+    // processed image size
 	int m_imgCols;
 	int m_imgRows;
-	
+
+    // number of clusters generated during the clustering phase
     int m_numClusters;
 
-  
+    // pixel and cluster representation over current image
 	vector_t m_allPoints;
     cluster_vec_t m_allClusters;
-    //vector_t m_candidateSet;
 
 
 	vector_t convertToDataPoint(const cv::Mat& image);
 	void DBScanIteration(double epsilon, unsigned int maxClusterPoints);
-
 
 private:
 
