@@ -4,13 +4,6 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include <opencv2/highgui/highgui.hpp>
 
-#include <iostream>
-#include <memory>
-#include <vector>
-
-#include <cstdlib>
-#include <cstdio>
-#include <cstring>
 class KinectSensor {
 public:
     KinectSensor();
@@ -18,9 +11,10 @@ public:
 
     void initSensor();
     void mapDepthData() const;
-    void getColorData(cv::Mat& mat);
-    void getDepthData(cv::Mat& outputMat);
-
+    void getMappedColorData(cv::Mat& mat);
+    void getMappedDepthData(cv::Mat& outputMat);
+    void getColorData(cv::Mat& outputMat, cv::Mat& depthMat);
+    int *getDepthMatrix() const;
 private:
     // sensor
     IKinectSensor* m_sensor = nullptr;
@@ -41,6 +35,9 @@ private:
     // buffers for frame data
     UINT8* m_colorBuffer    = nullptr;
     UINT16* m_depthBuffer   = nullptr;
+
+    // matrix with depth values
+    int* m_depthMatrix = nullptr;
 
     // buffers for space point mappings 
     ColorSpacePoint* m_depthToRGBA = nullptr;
