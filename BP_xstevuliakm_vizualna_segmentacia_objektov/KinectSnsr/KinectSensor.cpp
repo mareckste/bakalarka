@@ -27,7 +27,7 @@ KinectSensor::~KinectSensor() {
     if (m_colorBuffer) delete[] m_colorBuffer;
     if (m_depthBuffer) delete[] m_depthBuffer;
     if (m_rgbaToDepth) delete[] m_rgbaToDepth;
-    if (m_depthMatrix)  delete[] m_depthMatrix;
+    if (m_depthMatrix) delete[] m_depthMatrix;
 }
 
 /*

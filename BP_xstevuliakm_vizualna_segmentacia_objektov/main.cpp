@@ -6,7 +6,7 @@
 void labelBorders(cv::Mat &image, vector_t vector) {
   for (int i = 0; i < image.rows; i++) {
     for (int j = 0; j < image.cols; j++) {
-      if (vector[j+i*image.cols]->border == 1) {
+      if (vector[j+i*image.cols]->m_border == 1) {
         image.at<cv::Vec3b>(i, j)[0] = 204;
         image.at<cv::Vec3b>(i, j)[1] = 179;
         image.at<cv::Vec3b>(i, j)[2] = 51;
@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
 
  //   std::cout << "clustering done: " << dbs.m_numClusters << " clusters" << std::endl;
 
- //   // label border pixels
+ //   // m_label m_border pixels
  //   labelBorders(image, dbs.m_allPoints);
 
 	//// show results

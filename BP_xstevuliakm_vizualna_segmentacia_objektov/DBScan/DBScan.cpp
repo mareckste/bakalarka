@@ -5,7 +5,7 @@
 #include <iostream>
 
 /*
- * Inits the class by the size of the image
+ * Inits the class by the size of the color
  */
 DBScan::DBScan(int rows, int cols)
     :m_imgCols{ cols }, m_imgRows{ rows }, m_numClusters {1}
@@ -22,18 +22,29 @@ DBScan::~DBScan() {
 }
 
 /*
- * Converts cv image data to vector of pointers to DataPoint
+ * Converts cv color data to vector of pointers to DataPoint
  * objects stored in current DBScan class  
  */
-std::vector<DataPoint*> DBScan::convertToDataPoint(const cv::Mat& image) {
+std::vector<DataPoint*> DBScan::convertToDataPoint(const cv::Mat& color, const cv::Mat& depth) {
 	
     for (auto i = 0; i < m_imgRows; i++) {
 		for (auto j = 0; j < m_imgCols; j++) {
-        auto *dp = new DataPoint(i, j, image.at<cv::Vec3b>(i, j)[2], 
-                                      image.at<cv::Vec3b>(i, j)[1], 
-                                      image.at<cv::Vec3b>(i, j)[0], 
-                                      i * m_imgCols);
-		m_allPoints.push_back(dp);
+            double depthPoint = depth.data[i * m_imgRows + j];
+
+            if (depthPoint < 1) depthPoint = -1.0;
+
+            auto *dp = new DataPoint
+		        (
+                    i,
+                    j,
+                    depthPoint,
+                    color.at<cv::Vec3b>(i, j)[2],
+                    color.at<cv::Vec3b>(i, j)[1], 
+                    color.at<cv::Vec3b>(i, j)[0], 
+                    i * m_imgCols
+                );
+
+		    m_allPoints.push_back(dp);
 		}
 	}
 	return m_allPoints;
@@ -42,13 +53,21 @@ std::vector<DataPoint*> DBScan::convertToDataPoint(const cv::Mat& image) {
 /* Measures distance between 2 points to expand neighbourhood
  * of investigated point
  */
-bool DBScan::isInRadius(DataPoint *seed, DataPoint *center, DataPoint *potN, double epsilon) const {
+bool DBScan::isInRadius(DataPoint *seed, DataPoint *center, DataPoint *potN, double epsilon, double depthThreshold) const {
     double distance_s, distance_c;
 
-    distance_c = sqrt(pow(potN->r - center->r, 2) + pow(potN->g - center->g, 2)
-                        + pow(potN->b - center->b, 2));
-    distance_s = sqrt(pow(potN->r - seed->r, 2) + pow(potN->g - seed->g, 2)
-                        + pow(potN->b - seed->b, 2));
+
+
+    distance_c = sqrt(pow(potN->m_r - center->m_r, 2) + pow(potN->m_g - center->m_g, 2)
+                        + pow(potN->m_b - center->m_b, 2));
+
+    distance_s = sqrt(pow(potN->m_r - seed->m_r, 2) + pow(potN->m_g - seed->m_g, 2)
+                        + pow(potN->m_b - seed->m_b, 2));
+
+
+    if (center->m_depth && potN->m_depth) {
+
+    }
      
     //std::cout << "Distance: " << distance_c + distance_s << std::endl;
     return ((distance_s + distance_c) <= epsilon ? true : false);
@@ -59,9 +78,9 @@ bool DBScan::isInRadius(DataPoint *seed, DataPoint *center, DataPoint *potN, dou
  * Checks whether appropriate
  */
 void DBScan::assessNeighbour(DataPoint* dp, DataPoint* seed, DataPoint* center, vector_t& neighbours, 
-                                double epsilon) const {
-    if (!dp->clusterId && !dp->label && isInRadius(seed, center, dp, epsilon) == true) {
-        dp->label = DataPoint::VISITED;
+                                double epsilon, double depthThreshold) const {
+    if (!dp->m_clusterId && !dp->m_label && isInRadius(seed, center, dp, epsilon, depthThreshold) == true) {
+        dp->m_label = DataPoint::VISITED;
         neighbours.push_back(dp);
     }
 }
@@ -69,31 +88,31 @@ void DBScan::assessNeighbour(DataPoint* dp, DataPoint* seed, DataPoint* center, 
 /*
  * Clustering DBScan iteration over set of RGB pixels
  */
-void DBScan::DBScanIteration(double epsilon, unsigned int maxClusterPoints) {
+void DBScan::DBScanIteration(double epsilon, double depthThreshold, unsigned int maxClusterPoints) {
 
     auto begin = std::chrono::steady_clock::now();
 
     for (int i = 0; i < m_allPoints.size(); i++) {
         DataPoint *seedPoint = m_allPoints[i];
 
-        if (seedPoint->clusterId) continue;
+        if (seedPoint->m_clusterId) continue;
 
-        seedPoint->clusterId = m_numClusters;
+        seedPoint->m_clusterId = m_numClusters;
         
         vector_t neighbours;
         neighbours.push_back(seedPoint);
         
-        regionQuery(seedPoint, seedPoint, neighbours, epsilon);
+        regionQuery(seedPoint, seedPoint, neighbours, epsilon, depthThreshold);
 
         int j{ 0 };
         unsigned int assigned{ 1 };
 
         while (j < neighbours.size()) {
-            neighbours[j]->clusterId = m_numClusters;
+            neighbours[j]->m_clusterId = m_numClusters;
             assigned++;
 
             if (assigned < maxClusterPoints) {
-                regionQuery(seedPoint, neighbours[j], neighbours, epsilon);
+                regionQuery(seedPoint, neighbours[j], neighbours, epsilon, depthThreshold);
             }
             
             j++;
@@ -118,32 +137,32 @@ void DBScan::DBScanIteration(double epsilon, unsigned int maxClusterPoints) {
  * Looks up for 4 neighbours whether possible
  * to form segment together
  */
-void DBScan::regionQuery(DataPoint* seed, DataPoint* center, vector_t& neighbours, double epsilon) {
-    auto centerX{ center->x };
-    auto centerY{ center->y }; //77 189
+void DBScan::regionQuery(DataPoint* seed, DataPoint* center, vector_t& neighbours, double epsilon, double depthThreshold) {
+    auto centerX{ center->m_x };
+    auto centerY{ center->m_y }; //77 189
  
     if (movePossible(centerX, centerY + 1)) { // right
-        DataPoint *dp = m_allPoints[center->linIndex + 1];
+        DataPoint *dp = m_allPoints[center->m_linIndex + 1];
         if (dp != nullptr)
-            assessNeighbour(dp, seed, center, neighbours, epsilon);
+            assessNeighbour(dp, seed, center, neighbours, epsilon, depthThreshold);
     }
 
     if (movePossible(centerX - 1, centerY)) { // top
-        DataPoint *dp = m_allPoints[center->linIndex - m_imgCols];
+        DataPoint *dp = m_allPoints[center->m_linIndex - m_imgCols];
         if (dp != nullptr)
-            assessNeighbour(dp, seed, center, neighbours, epsilon);
+            assessNeighbour(dp, seed, center, neighbours, epsilon, depthThreshold);
     }
 
     if (movePossible(centerX, centerY - 1)) { // left
-        DataPoint *dp = m_allPoints[center->linIndex - 1];
+        DataPoint *dp = m_allPoints[center->m_linIndex - 1];
         if (dp != nullptr)
-            assessNeighbour(dp, seed, center, neighbours, epsilon);
+            assessNeighbour(dp, seed, center, neighbours, epsilon, depthThreshold);
     }
 
     if (movePossible(centerX + 1, centerY)) { // bottom
-        DataPoint *dp = m_allPoints[center->linIndex + m_imgCols];
+        DataPoint *dp = m_allPoints[center->m_linIndex + m_imgCols];
         if (dp != nullptr)
-            assessNeighbour(dp, seed, center, neighbours, epsilon);
+            assessNeighbour(dp, seed, center, neighbours, epsilon, depthThreshold);
     }
 
 }
@@ -165,33 +184,33 @@ bool DBScan::fromDifferentCluster(DataPoint* dp, int x, int y) {
     auto index = x * ( m_imgCols ) + y;
     auto point = m_allPoints[index];
 
-    if (dp->clusterId == point->clusterId) {
+    if (dp->m_clusterId == point->m_clusterId) {
         return false;
     }
     return true;  //(dp == point ? false : true);
 }
 
 /*
- * Assesses if the current point stands for border pixel 
+ * Assesses if the current point stands for m_border pixel 
  */
 bool DBScan::checkBorder(DataPoint* pt) {
-    if (movePossible(pt->x, pt->y + 1) && fromDifferentCluster(pt, pt->x, pt->y + 1)) {
-        pt->border = 1;
+    if (movePossible(pt->m_x, pt->m_y + 1) && fromDifferentCluster(pt, pt->m_x, pt->m_y + 1)) {
+        pt->m_border = 1;
         return true;
     }
 
-    if (movePossible(pt->x - 1, pt->y) && fromDifferentCluster(pt, pt->x - 1, pt->y)) {
-        pt->border = 1;
+    if (movePossible(pt->m_x - 1, pt->m_y) && fromDifferentCluster(pt, pt->m_x - 1, pt->m_y)) {
+        pt->m_border = 1;
         return true;
     }
 
-    if (movePossible(pt->x, pt->y - 1) && fromDifferentCluster(pt, pt->x, pt->y - 1)) {
-        pt->border = 1;
+    if (movePossible(pt->m_x, pt->m_y - 1) && fromDifferentCluster(pt, pt->m_x, pt->m_y - 1)) {
+        pt->m_border = 1;
         return true;
     }
 
-    if (movePossible(pt->x + 1, pt->y) && fromDifferentCluster(pt, pt->x + 1, pt->y)) {
-        pt->border = 1;
+    if (movePossible(pt->m_x + 1, pt->m_y) && fromDifferentCluster(pt, pt->m_x + 1, pt->m_y)) {
+        pt->m_border = 1;
         return true;
     }
 
@@ -199,7 +218,7 @@ bool DBScan::checkBorder(DataPoint* pt) {
 }
 
 /*
- * Iterates over all points and marks border pixels
+ * Iterates over all points and marks m_border pixels
  */
 void DBScan::setBorderPoints() {
     for (auto pt: m_allPoints) {

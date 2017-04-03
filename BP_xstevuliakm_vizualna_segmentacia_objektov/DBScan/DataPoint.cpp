@@ -3,9 +3,9 @@
 /*
  * Initializes current DataPoint object
  */
-DataPoint::DataPoint(int x, int y, int r, int g, int b, int width)
-	:x(x), y(y), r(r), g(g), b(b), clusterId(UNLABELED), label(UNLABELED),
-    border(0)
+DataPoint::DataPoint(int x, int y, double d, int r, int g, int b, int width)
+	:m_x(x), m_y(y), m_depth(d), m_r(r), m_g(g), m_b(b), m_clusterId(UNLABELED), m_label(UNLABELED),
+    m_border(0)
 {
-  linIndex = y + width;
+  m_linIndex = y + width;
 }

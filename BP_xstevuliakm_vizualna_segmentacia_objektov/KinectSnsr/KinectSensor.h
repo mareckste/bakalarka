@@ -26,7 +26,7 @@ private:
     // mapper
     ICoordinateMapper* m_coordinateMapper = nullptr;
     
-    // sizes of images retrieved from color and depth sensor
+    // sizes of images retrieved from color and m_depth sensor
     int m_colorWidth    = 0;
     int m_colorHeight   = 0;
     int m_depthWidth    = 0;
@@ -36,7 +36,7 @@ private:
     UINT8* m_colorBuffer    = nullptr;
     UINT16* m_depthBuffer   = nullptr;
 
-    // matrix with depth values
+    // matrix with m_depth values
     int* m_depthMatrix = nullptr;
 
     // buffers for space point mappings 
