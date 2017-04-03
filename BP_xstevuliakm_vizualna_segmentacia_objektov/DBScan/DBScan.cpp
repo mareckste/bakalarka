@@ -25,11 +25,11 @@ DBScan::~DBScan() {
  * Converts cv color data to vector of pointers to DataPoint
  * objects stored in current DBScan class  
  */
-std::vector<DataPoint*> DBScan::convertToDataPoint(const cv::Mat& color, const cv::Mat& depth) {
+std::vector<DataPoint*> DBScan::convertToDataPoint(const cv::Mat& color, const double *depth) {
 	
     for (auto i = 0; i < m_imgRows; i++) {
 		for (auto j = 0; j < m_imgCols; j++) {
-            double depthPoint = depth.data[i * m_imgRows + j];
+            double depthPoint = depth[i * m_imgCols + j];
 
             if (depthPoint < 1) depthPoint = -1.0;
 
@@ -56,18 +56,18 @@ std::vector<DataPoint*> DBScan::convertToDataPoint(const cv::Mat& color, const c
 bool DBScan::isInRadius(DataPoint *seed, DataPoint *center, DataPoint *potN, double epsilon, double depthThreshold) const {
     double distance_s, distance_c;
 
+    if (center->m_depth && potN->m_depth) {
+        double scale = abs(center->m_depth - potN->m_depth);
 
+        if (scale > depthThreshold) return false;
+    }
 
     distance_c = sqrt(pow(potN->m_r - center->m_r, 2) + pow(potN->m_g - center->m_g, 2)
                         + pow(potN->m_b - center->m_b, 2));
 
     distance_s = sqrt(pow(potN->m_r - seed->m_r, 2) + pow(potN->m_g - seed->m_g, 2)
                         + pow(potN->m_b - seed->m_b, 2));
-
-
-    if (center->m_depth && potN->m_depth) {
-
-    }
+          
      
     //std::cout << "Distance: " << distance_c + distance_s << std::endl;
     return ((distance_s + distance_c) <= epsilon ? true : false);

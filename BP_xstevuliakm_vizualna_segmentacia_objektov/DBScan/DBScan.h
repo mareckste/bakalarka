@@ -24,14 +24,14 @@ public:
     cluster_vec_t m_allClusters;
 
 
-	vector_t convertToDataPoint(const cv::Mat& color, const cv::Mat& depth);
-	void DBScanIteration(double epsilon, unsigned int maxClusterPoints);
+	vector_t convertToDataPoint(const cv::Mat& color, const double* depth);
+	void DBScanIteration(double epsilon, double depthThreshold, unsigned maxClusterPoints);
 
 private:
 
-	bool isInRadius(DataPoint* seed, DataPoint* center, DataPoint* potN, double epsilon) const;
-    void assessNeighbour(DataPoint* dp, DataPoint* seed, DataPoint* center, vector_t& vector, double epsilon) const;
-    void regionQuery(DataPoint *seed, DataPoint *center, vector_t &neighbours, double epsilon);
+	bool isInRadius(DataPoint* seed, DataPoint* center, DataPoint* potN, double epsilon, double depthThreshold) const;
+    void assessNeighbour(DataPoint* dp, DataPoint* seed, DataPoint* center, vector_t& neighbours, double epsilon, double depthThreshold) const;
+    void regionQuery(DataPoint* seed, DataPoint* center, vector_t& neighbours, double epsilon, double depthThreshold);
     bool movePossible(int x, int y) const;
     bool fromDifferentCluster(DataPoint* dp, int x, int y);
     bool checkBorder(DataPoint* pt);

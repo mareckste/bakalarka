@@ -48,8 +48,10 @@ int main(int argc, char** argv) {
     KinectSensor sensor;
     cv::Mat m(1080, 1920, CV_8UC3);
     cv::Mat m1(1080, 1920, CV_8UC1);
+    DBScan dbs{ m.rows, m.cols };
+    double *depthBuff = new double[1920 * 1080];
     while (true) {
-        sensor.getColorData(m, m1);
+        sensor.getColorData(m, depthBuff);
        // memcpy(m1.data, sensor.getDepthMatrix(), 1920 * 1080);
        // cv::imshow("Original image", m);
         //m.copyTo(m1);
@@ -57,10 +59,19 @@ int main(int argc, char** argv) {
         dbs.convertToDataPoint(m);
         dbs.DBScanIteration(50, 150);
         labelBorders(m, dbs.m_allPoints);*/
-        cv::imshow("Segm image", m);
-        cv::imshow("Depth image", m1);
+        if (sensor.m_mapFlag == true) {
+            printf("CLUSTERING\n");
+            dbs.convertToDataPoint(m, depthBuff);
+            dbs.DBScanIteration(50, 10, 150);
+            labelBorders(m, dbs.m_allPoints);
+            delete[] depthBuff;
+            break;
+        }
 
         cv::waitKey(2);
     }
+
+    cv::imshow("Segm image", m);
+    cv::waitKey(0);
 	return 0;
 }

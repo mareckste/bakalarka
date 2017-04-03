@@ -13,8 +13,6 @@ KinectSensor::KinectSensor() {
  */
 KinectSensor::~KinectSensor() {
 
-    if (m_depthToRGBA) delete[] m_depthToRGBA;
-
     if (m_coordinateMapper) m_coordinateMapper->Release();
     
     if (m_sensor) {
@@ -102,9 +100,9 @@ void KinectSensor::initSensor() {
 
 /*
  * Initializes coordinate mapper and space point arrays to map 
- * back and forth between depth and color
+ * back and forth between m_depth and color
  */
-void KinectSensor::mapDepthData() const {
+void KinectSensor::mapDepthData() {
     IDepthFrame *depthFrame = nullptr;
     IDepthFrameReference *depthFrameRef = nullptr;
 
@@ -112,6 +110,8 @@ void KinectSensor::mapDepthData() const {
         SUCCEEDED(m_multiSourceFrame->get_DepthFrameReference(&depthFrameRef)) &&
         SUCCEEDED(depthFrameRef->AcquireFrame(&depthFrame))
         ) {
+        
+        m_mapFlag = true;
 
         depthFrame->CopyFrameDataToArray(m_depthWidth * m_depthHeight,  m_depthBuffer);
 
@@ -180,7 +180,7 @@ void KinectSensor::getMappedColorData(cv::Mat& outputMat) {
 }
 
 /*
- * Maps color frame to depth space
+ * Maps color frame to m_depth space
  * and initializes the cv Matrix with color values
  */
 void KinectSensor::getMappedDepthData(cv::Mat& outputMat) {
@@ -220,7 +220,7 @@ void KinectSensor::getMappedDepthData(cv::Mat& outputMat) {
     }
 }
 
-void KinectSensor::getColorData(cv::Mat& outputMat, cv::Mat& depthMat) {
+void KinectSensor::getColorData(cv::Mat& outputMat, double* depthMat) {
     IColorFrame* colorFrame = nullptr;
     IColorFrameReference* colorFrameRef = nullptr;
 
@@ -240,12 +240,12 @@ void KinectSensor::getColorData(cv::Mat& outputMat, cv::Mat& depthMat) {
                         DepthSpacePoint p = m_rgbaToDepth[i * m_colorWidth + j];
 
                         if (p.X < 0 || p.Y < 0 || p.X > m_depthWidth || p.Y > m_depthHeight) {
-                            depthMat.data[i * m_colorWidth + j] = 255;
+                            depthMat[i * m_colorWidth + j] = -1;
                         }
                         else {
                             int index = static_cast<int>(p.X + 0.5f) + m_depthWidth * static_cast<int>(p.Y + 0.5f);
                             // m_depthMatrix[i * m_colorWidth + j] = static_cast<int> (255 * (m_depthBuffer[index] - 0) / 3200.0);
-                            depthMat.data[i * m_colorWidth + j] = static_cast<int> (255 * (m_depthBuffer[index] - 0) / 3200.0);
+                            depthMat[i * m_colorWidth + j] = m_depthBuffer[index];
                         }
 
                         outputMat.at<cv::Vec3b>(i, j)[0] = m_colorBuffer[4 * (i * m_colorWidth + j) + 0];

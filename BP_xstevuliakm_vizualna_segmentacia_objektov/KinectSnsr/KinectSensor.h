@@ -8,12 +8,12 @@ class KinectSensor {
 public:
     KinectSensor();
     ~KinectSensor();
-
+    bool m_mapFlag = false;
     void initSensor();
-    void mapDepthData() const;
+    void mapDepthData();
     void getMappedColorData(cv::Mat& mat);
     void getMappedDepthData(cv::Mat& outputMat);
-    void getColorData(cv::Mat& outputMat, cv::Mat& depthMat);
+    void getColorData(cv::Mat& outputMat, double* depthMat);
     int *getDepthMatrix() const;
 private:
     // sensor
@@ -25,6 +25,7 @@ private:
 
     // mapper
     ICoordinateMapper* m_coordinateMapper = nullptr;
+    
     
     // sizes of images retrieved from color and m_depth sensor
     int m_colorWidth    = 0;
