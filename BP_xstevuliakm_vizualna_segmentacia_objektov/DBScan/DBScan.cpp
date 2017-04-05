@@ -79,7 +79,7 @@ bool DBScan::isInRadius(DataPoint *seed, DataPoint *center, DataPoint *potN, dou
  */
 void DBScan::assessNeighbour(DataPoint* dp, DataPoint* seed, DataPoint* center, vector_t& neighbours, 
                                 double epsilon, double depthThreshold) const {
-    if (!dp->m_clusterId && !dp->m_label && isInRadius(seed, center, dp, epsilon, depthThreshold) == true) {
+    if (!dp->m_seed && !dp->m_label && isInRadius(seed, center, dp, epsilon, depthThreshold) == true) {
         dp->m_label = DataPoint::VISITED;
         neighbours.push_back(dp);
     }
@@ -88,14 +88,16 @@ void DBScan::assessNeighbour(DataPoint* dp, DataPoint* seed, DataPoint* center, 
 /*
  * Clustering DBScan iteration over set of RGB pixels
  */
-void DBScan::DBScanIteration(double epsilon, double depthThreshold, unsigned int maxClusterPoints) {
+void DBScan::DBScanIteration(double epsilon, double depthThreshold, unsigned int numOfClusters) {
+
+    unsigned int minClusterPoints = (m_imgRows * m_imgCols) / numOfClusters;
 
     auto begin = std::chrono::steady_clock::now();
 
     for (int i = 0; i < m_allPoints.size(); i++) {
         DataPoint *seedPoint = m_allPoints[i];
 
-        if (seedPoint->m_clusterId) continue;
+        if (seedPoint->m_seed) continue;
 
         seedPoint->m_clusterId = m_numClusters;
         
@@ -108,10 +110,11 @@ void DBScan::DBScanIteration(double epsilon, double depthThreshold, unsigned int
         unsigned int assigned{ 1 };
 
         while (j < neighbours.size()) {
-            neighbours[j]->m_clusterId = m_numClusters;
+            
+            neighbours[j]->m_seed = seedPoint;
             assigned++;
 
-            if (assigned < maxClusterPoints) {
+            if (assigned < minClusterPoints) {
                 regionQuery(seedPoint, neighbours[j], neighbours, epsilon, depthThreshold);
             }
             
@@ -129,6 +132,8 @@ void DBScan::DBScanIteration(double epsilon, double depthThreshold, unsigned int
                                         (end - begin).count() << std::endl;
     std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::nanoseconds> 
                                         (end - begin).count() << std::endl;
+
+   // mergeClusters(minClusterPoints);
     setBorderPoints();
 }
 
@@ -184,7 +189,7 @@ bool DBScan::fromDifferentCluster(DataPoint* dp, int x, int y) {
     auto index = x * ( m_imgCols ) + y;
     auto point = m_allPoints[index];
 
-    if (dp->m_clusterId == point->m_clusterId) {
+    if (dp->m_seed->m_clusterId == point->m_seed->m_clusterId) {
         return false;
     }
     return true;  //(dp == point ? false : true);
@@ -224,6 +229,39 @@ void DBScan::setBorderPoints() {
     for (auto pt: m_allPoints) {
         if (pt != nullptr) {
             checkBorder(pt);
+        }
+    }
+}
+
+void DBScan::mergeClusters(unsigned int minClusterPoints) {
+    
+    for (auto& cluster: m_allClusters) {
+        
+        if (cluster->m_clusterSize < minClusterPoints) {
+            Cluster *minc = nullptr;
+            int minDist = 100000;
+
+            for (auto& pt: cluster->m_clusterMemberPoints) {
+                int dc, da, d2;
+
+
+
+                if (movePossible(pt->m_x, pt->m_y + 1) && fromDifferentCluster(pt, pt->m_x, pt->m_y + 1)) {
+                     
+                }
+
+                if (movePossible(pt->m_x - 1, pt->m_y) && fromDifferentCluster(pt, pt->m_x - 1, pt->m_y)) {
+
+                }
+
+                if (movePossible(pt->m_x, pt->m_y - 1) && fromDifferentCluster(pt, pt->m_x, pt->m_y - 1)) {
+
+                }
+
+                if (movePossible(pt->m_x + 1, pt->m_y) && fromDifferentCluster(pt, pt->m_x + 1, pt->m_y)) {
+
+                }
+            }
         }
     }
 }

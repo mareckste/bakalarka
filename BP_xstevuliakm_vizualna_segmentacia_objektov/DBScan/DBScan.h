@@ -25,7 +25,7 @@ public:
 
 
 	vector_t convertToDataPoint(const cv::Mat& color, const double* depth);
-	void DBScanIteration(double epsilon, double depthThreshold, unsigned maxClusterPoints);
+	void DBScanIteration(double epsilon, double depthThreshold, unsigned int numOfClusters);
 
 private:
 
@@ -36,6 +36,7 @@ private:
     bool fromDifferentCluster(DataPoint* dp, int x, int y);
     bool checkBorder(DataPoint* pt);
     void setBorderPoints();
+    void mergeClusters(unsigned int minClusterPoints);
 
 };
 

@@ -1,5 +1,7 @@
 #pragma once
 
+class Cluster;
+
 class DataPoint
 {
 public:
@@ -14,7 +16,8 @@ public:
     //Spatial coordinates
 	int m_x;
 	int m_y;
-
+    
+    DataPoint* m_seed = nullptr;
     //3D coordinate
     double m_depth;
  
