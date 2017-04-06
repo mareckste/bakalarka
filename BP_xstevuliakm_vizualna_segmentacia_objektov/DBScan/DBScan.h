@@ -33,9 +33,14 @@ private:
     void assessNeighbour(DataPoint* dp, DataPoint* seed, DataPoint* center, vector_t& neighbours, double epsilon, double depthThreshold) const;
     void regionQuery(DataPoint* seed, DataPoint* center, vector_t& neighbours, double epsilon, double depthThreshold);
     bool movePossible(int x, int y) const;
+    DataPoint* getPointAt(int x, int y);
+    Cluster* getClusterAt(int pos);
     bool fromDifferentCluster(DataPoint* dp, int x, int y);
+    bool diffNeighbour(int x, int y, DataPoint* p);
     bool checkBorder(DataPoint* pt);
     void setBorderPoints();
+    static bool hasAvgColors(const Cluster*const cluster);
+    double computeMergingDistance(int nX, int nY);
     void mergeClusters(unsigned int minClusterPoints);
 
 };

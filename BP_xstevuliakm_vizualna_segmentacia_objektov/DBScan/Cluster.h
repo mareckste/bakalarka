@@ -12,6 +12,10 @@ public:
     int m_id;
     DataPoint* m_seed = nullptr;
 
+    double m_avgR = -1;
+    double m_avgG = -1;
+    double m_avgB = -1;
+
     // how many datapoints this cluster contains
     int m_clusterSize;
 
@@ -19,4 +23,5 @@ public:
     vector_t m_clusterMemberPoints;
 
     void addMemberPoints(vector_t& dp);
+    void computeColorAverages();
 };
