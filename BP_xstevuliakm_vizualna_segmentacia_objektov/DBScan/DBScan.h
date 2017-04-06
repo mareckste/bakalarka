@@ -39,8 +39,8 @@ private:
     bool diffNeighbour(int x, int y, DataPoint* p);
     bool checkBorder(DataPoint* pt);
     void setBorderPoints();
-    static bool hasAvgColors(const Cluster*const cluster);
-    double computeMergingDistance(int nX, int nY);
+    static bool hasAvgValues(const Cluster*const cluster);
+    void computeMergingDistance(const Cluster*const currClust, int nX, int nY, double min, Cluster* minc);
     void mergeClusters(unsigned int minClusterPoints);
 
 };

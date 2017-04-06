@@ -16,6 +16,9 @@ public:
     double m_avgG = -1;
     double m_avgB = -1;
 
+    double m_avgX = -1;
+    double m_avgY = -1;
+
     // how many datapoints this cluster contains
     int m_clusterSize;
 
