@@ -1,3 +1,4 @@
-##**_Bachelor thesis_** repository
-
-This repository's contains bachelor thesis ...
+## Bachelor thesis Števuliak Marek FIIT STU 
+***
+### Visual object segmentation utilizing Kinect v2 sensor's D-Depth 3D information
+Image segmentation as one of the computer vision methods utilized among image object detection, is becoming more popular in various applications. Best-favoured are mainly techniques founded on superpixels whose output generates the uniform segments. The goal of the thesis is to design and implement object segmentation method utilizing Kinect v2 sensor along with a superpixel pre-processing technique.    Within elaboration of the thesis we focused on image segmentation. We dedicated major attention to the state of the art superpixel based approaches. Last but not least, we assessed the pros and cons of the approaches as well as their suitability for additional extension of the 3D depth information provided by the mentioned Kinect v2 sensor. 
