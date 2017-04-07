@@ -26,5 +26,6 @@ public:
     vector_t m_clusterMemberPoints;
 
     void addMemberPoints(vector_t& dp);
-    void computeColorAverages();
+    void computeAverages();
+    void updateSize();
 };

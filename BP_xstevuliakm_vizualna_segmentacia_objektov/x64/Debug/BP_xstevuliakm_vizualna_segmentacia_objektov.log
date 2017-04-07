@@ -1,11 +1,3 @@
 ﻿  main.cpp
-  DataPoint.cpp
-  DBScan.cpp
-c:\users\stevu\disk google\skola\6.semester\bp2_info_b\bp_xstevuliakm_vizualna_segmentacia_objektov\bp_xstevuliakm_vizualna_segmentacia_objektov\dbscan\dbscan.cpp(240): warning C4018: '<': signed/unsigned mismatch
-c:\users\stevu\disk google\skola\6.semester\bp2_info_b\bp_xstevuliakm_vizualna_segmentacia_objektov\bp_xstevuliakm_vizualna_segmentacia_objektov\dbscan\dbscan.cpp(245): warning C4101: 'da': unreferenced local variable
-c:\users\stevu\disk google\skola\6.semester\bp2_info_b\bp_xstevuliakm_vizualna_segmentacia_objektov\bp_xstevuliakm_vizualna_segmentacia_objektov\dbscan\dbscan.cpp(245): warning C4101: 'dc': unreferenced local variable
-c:\users\stevu\disk google\skola\6.semester\bp2_info_b\bp_xstevuliakm_vizualna_segmentacia_objektov\bp_xstevuliakm_vizualna_segmentacia_objektov\dbscan\dbscan.cpp(245): warning C4101: 'd2': unreferenced local variable
-  Cluster.cpp
-  Generating Code...
   BP_xstevuliakm_vizualna_segmentacia_objektov.vcxproj -> C:\Users\stevu\Disk Google\skola\6.semester\BP2_INFO_B\BP_xstevuliakm_vizualna_segmentacia_objektov\x64\Debug\BP_xstevuliakm_vizualna_segmentacia_objektov.exe
   BP_xstevuliakm_vizualna_segmentacia_objektov.vcxproj -> C:\Users\stevu\Disk Google\skola\6.semester\BP2_INFO_B\BP_xstevuliakm_vizualna_segmentacia_objektov\x64\Debug\BP_xstevuliakm_vizualna_segmentacia_objektov.pdb (Full PDB)

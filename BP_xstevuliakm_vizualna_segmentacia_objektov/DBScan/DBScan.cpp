@@ -110,6 +110,8 @@ void DBScan::DBScanIteration(double epsilon, double depthThreshold, unsigned int
         if (seedPoint->m_seed) continue;
 
         seedPoint->m_clusterId = m_numClusters;
+        seedPoint->m_seed = seedPoint;
+
         vector_t neighbours;
         neighbours.push_back(seedPoint);
         
@@ -134,8 +136,14 @@ void DBScan::DBScanIteration(double epsilon, double depthThreshold, unsigned int
         m_allClusters.push_back(currCluster);
         m_numClusters++;
     }
-    
-   // mergeClusters(minClusterPoints);
+    printf("superpixels before : %d \n", m_allClusters.size());
+
+    DBSmerge(minClusterPoints);
+    int num = 0;
+    for (auto& c: m_allClusters) {
+        if (c->m_id != -1) num++;
+    }
+    printf("superpixels after: %d \n", num);
     setBorderPoints();
 }
 
@@ -186,15 +194,6 @@ bool DBScan::movePossible(int x, int y) const {
 }
 
 
-DataPoint* DBScan::getPointAt(int x, int y) {
-    auto index = x * (m_imgCols)+y;
-    return m_allPoints[index];
-}
-
-
-inline Cluster* DBScan:: getClusterAt(int pos) {
-    return m_allClusters.at(pos - 1);
-}
 
 /*
  * Checks whether neighbour from different cluster
@@ -268,11 +267,23 @@ bool DBScan::hasAvgValues(const Cluster *const cluster) {
     return true;
 }
 
-void DBScan::computeMergingDistance(const Cluster*const currClust, int nX, int nY, double* min, Cluster* minc) {
+DataPoint* DBScan::getPointAt(int x, int y) {
+    auto index = x * (m_imgCols)+y;
+    return m_allPoints[index];
+}
+
+
+inline Cluster* DBScan:: getClusterAt(int pos) {
+    return m_allClusters[pos - 1];
+}
+
+void DBScan::computeMergingDistance(const Cluster*const currClust, int nX, int nY, double* min, Cluster** minc) {
     double dist_c, dist_a, dist_2;
+    
     auto neighClustId = getPointAt(nX, nY)->m_seed->m_clusterId;
     auto neighClust = getClusterAt(neighClustId);
 
+    
     if (!hasAvgValues(neighClust)) neighClust->computeAverages();
 
     dist_c = sqrt(pow(currClust->m_avgR-neighClust->m_avgR, 2) + pow(currClust->m_avgB - neighClust->m_avgB, 2)
@@ -282,14 +293,41 @@ void DBScan::computeMergingDistance(const Cluster*const currClust, int nX, int n
 
     dist_2 =  dist_c + dist_a;
 
+   // printf("%lf\n", dist_2);
+
     if (dist_2 < *min) {
         *min = dist_2;
-        minc = neighClust;
+        *minc = neighClust;
     }
 }
 
+void DBScan::mergeClusters(Cluster* cluster, Cluster* minc) {
+    Cluster *huge = nullptr;
+    Cluster *less = nullptr;
+    DataPoint *lessSeed = nullptr;
+    DataPoint *hugeSeed = nullptr;
 
-void DBScan::mergeClusters(unsigned int minClusterPoints) {
+    huge = (cluster->m_clusterSize > minc->m_clusterSize ? cluster : minc);
+    less = (huge == cluster ? minc : cluster);
+
+    //lessSeed = less->m_clusterMemberPoints[0];
+    hugeSeed = huge->m_clusterMemberPoints[0];
+
+    //lessSeed->m_seed->m_clusterId = huge->m_id;
+
+    less->m_id = -1;
+
+    for (auto& pt: less->m_clusterMemberPoints) {
+        pt->m_seed = hugeSeed;
+        huge->m_clusterMemberPoints.push_back(pt);
+
+    }
+    huge->updateSize();
+    huge->computeAverages();
+}
+
+
+void DBScan::DBSmerge(unsigned int minClusterPoints) {
     
     for (auto& currClust: m_allClusters) {
 
@@ -304,20 +342,25 @@ void DBScan::mergeClusters(unsigned int minClusterPoints) {
             for (auto& pt: currClust->m_clusterMemberPoints) {
                                 
                 if (diffNeighbour(pt->m_x, pt->m_y + 1, pt)) {
-                    (computeMergingDistance(currClust, pt->m_x, pt->m_y + 1,&minDist, minc));
+                    (computeMergingDistance(currClust, pt->m_x, pt->m_y + 1,&minDist, &minc));
                 }
 
                 if (diffNeighbour(pt->m_x - 1, pt->m_y, pt)) {
-                    (computeMergingDistance(currClust, pt->m_x - 1, pt->m_y, &minDist, minc));
+                    (computeMergingDistance(currClust, pt->m_x - 1, pt->m_y, &minDist, &minc));
                 }
 
                 if (diffNeighbour(pt->m_x, pt->m_y - 1, pt)) {
-                    (computeMergingDistance(currClust, pt->m_x, pt->m_y - 1, &minDist, minc));
+                    (computeMergingDistance(currClust, pt->m_x, pt->m_y - 1, &minDist, &minc));
                 }
 
                 if (diffNeighbour(pt->m_x + 1, pt->m_y, pt)) {
-                    (computeMergingDistance(currClust, pt->m_x + 1, pt->m_y, &minDist, minc));
+                    (computeMergingDistance(currClust, pt->m_x + 1, pt->m_y, &minDist, &minc));
                 }
+            }
+
+            if (minc != nullptr && minc!=currClust) {
+                
+                mergeClusters(currClust, minc);
             }
         }
     }

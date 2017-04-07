@@ -40,8 +40,9 @@ private:
     bool checkBorder(DataPoint* pt);
     void setBorderPoints();
     static bool hasAvgValues(const Cluster*const cluster);
-    void computeMergingDistance(const Cluster*const currClust, int nX, int nY, double min, Cluster* minc);
-    void mergeClusters(unsigned int minClusterPoints);
+    void computeMergingDistance(const Cluster*const currClust, int nX, int nY, double* min, Cluster** minc);
+    static void mergeClusters(Cluster* cluster, Cluster* minc);
+    void DBSmerge(unsigned int minClusterPoints);
 
 };
 

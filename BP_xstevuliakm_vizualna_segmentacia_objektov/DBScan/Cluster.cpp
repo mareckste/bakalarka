@@ -52,3 +52,7 @@ void Cluster::computeAverages() {
         m_avgY /= m_clusterSize;
     }
 }
+
+void Cluster::updateSize() {
+    m_clusterSize = m_clusterMemberPoints.size();
+}

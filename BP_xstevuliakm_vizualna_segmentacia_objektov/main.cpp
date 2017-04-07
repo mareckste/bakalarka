@@ -61,13 +61,12 @@ int main(int argc, char** argv) {
         labelBorders(m, dbs.m_allPoints);*/
         if (sensor.m_mapFlag == true) {
 
-            DBScan dbs{ m1.rows, m1.cols };
+            DBScan dbs{ m.rows, m.cols };
             printf("CLUSTERING\n");
-            cv::resize(m, m1, size);
-            dbs.convertToDataPoint(m1, depthBuff);
-            dbs.DBScanIteration(50, 10000, 1000);
-            printf("superpixels: %d \n", dbs.m_numClusters);
-            labelBorders(m1, dbs.m_allPoints);
+            //cv::resize(m, m1, size);
+            dbs.convertToDataPoint(m, depthBuff);
+            dbs.DBScanIteration(50, 20.0, 1000);
+            labelBorders(m, dbs.m_allPoints);
             
             
             delete[] depthBuff;
@@ -77,7 +76,7 @@ int main(int argc, char** argv) {
 
     }
 
-    cv::imshow("Segm image", m1);
+    cv::imshow("Segm image", m);
     cv::waitKey(0);
 	return 0;
 }
