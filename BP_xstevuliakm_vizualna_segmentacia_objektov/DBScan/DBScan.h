@@ -25,7 +25,7 @@ public:
 
 
 	vector_t convertToDataPoint(const cv::Mat& color, const double* depth);
-	void DBScanIteration(double epsilon, double depthThreshold, unsigned int numOfClusters);
+	void DBScanIteration(double epsilon, double depthThreshold, unsigned int numOfClusters, unsigned int mergingFactor);
 
 private:
 
@@ -42,7 +42,7 @@ private:
     static bool hasAvgValues(const Cluster*const cluster);
     void computeMergingDistance(const Cluster*const currClust, int nX, int nY, double* min, Cluster** minc);
     static void mergeClusters(Cluster* cluster, Cluster* minc);
-    void DBSmerge(unsigned int minClusterPoints);
+    void DBSmerge(unsigned minClusterPoints, int* size, int numOfClusters);
 
 };
 

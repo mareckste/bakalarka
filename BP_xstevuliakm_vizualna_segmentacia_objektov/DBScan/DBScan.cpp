@@ -3,15 +3,6 @@
 #include <ctime>
 #include <chrono>
 #include <iostream>
-/*
- * 
-    auto end = std::chrono::steady_clock::now();
-    std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::microseconds>
-                                        (end - begin).count() << std::endl;
-    std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::nanoseconds> 
-                                        (end - begin).count() << std::endl;
- */
-
 
 // ==============================CODE======================================================================
 
@@ -21,6 +12,8 @@
 DBScan::DBScan(int rows, int cols)
     :m_imgCols{ cols }, m_imgRows{ rows }, m_numClusters {1}
 {
+    m_allPoints.reserve(rows * cols);
+    m_allClusters.reserve(40000);
 }
 
 
@@ -37,12 +30,15 @@ DBScan::~DBScan() {
  * objects stored in current DBScan class  
  */
 std::vector<DataPoint*> DBScan::convertToDataPoint(const cv::Mat& color, const double *depth) {
-	
+    double depthPoint = -1;
+
     for (auto i = 0; i < m_imgRows; i++) {
 		for (auto j = 0; j < m_imgCols; j++) {
-            double depthPoint = depth[i * m_imgCols + j];
+            
+		    if (depth != nullptr)
+                depthPoint = depth[i * m_imgCols + j];
 
-            if (depthPoint < 1) depthPoint = -1.0;
+            if ((depthPoint < 1)) depthPoint = -1.0;
 
             auto *dp = new DataPoint
 		        (
@@ -100,8 +96,11 @@ void DBScan::assessNeighbour(DataPoint* dp, DataPoint* seed, DataPoint* center, 
 /*
  * Clustering DBScan iteration over set of RGB pixels
  */
-void DBScan::DBScanIteration(double epsilon, double depthThreshold, unsigned int numOfClusters) {
+void DBScan::DBScanIteration(double epsilon, double depthThreshold, unsigned int numOfClusters, 
+                        unsigned int mergingFactor) {
+
     auto minClusterPoints = (m_imgRows * m_imgCols) / numOfClusters;
+    auto start = std::chrono::steady_clock::now();
 
     for (int i = 0; i < m_allPoints.size(); i++) {
     
@@ -136,9 +135,19 @@ void DBScan::DBScanIteration(double epsilon, double depthThreshold, unsigned int
         m_allClusters.push_back(currCluster);
         m_numClusters++;
     }
-    printf("superpixels before : %d \n", m_allClusters.size());
 
-    DBSmerge(minClusterPoints);
+    int size = m_allClusters.size();
+
+    printf("superpixels before : %d \n", size);
+
+    for (int i = 0; i < mergingFactor; i++)
+        DBSmerge(minClusterPoints, &size, numOfClusters);
+    
+    
+    auto end = std::chrono::steady_clock::now();
+    std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::microseconds>
+        (end - start).count()/1000000 << std::endl;
+
     int num = 0;
     for (auto& c: m_allClusters) {
         if (c->m_id != -1) num++;
@@ -146,8 +155,7 @@ void DBScan::DBScanIteration(double epsilon, double depthThreshold, unsigned int
     printf("superpixels after: %d \n", num);
     setBorderPoints();
 }
-
-  
+ 
 /*
  * Looks up for 4 neighbours whether possible
  * to form segment together
@@ -193,8 +201,6 @@ bool DBScan::movePossible(int x, int y) const {
     return false;
 }
 
-
-
 /*
  * Checks whether neighbour from different cluster
  */
@@ -208,7 +214,10 @@ bool DBScan::fromDifferentCluster(DataPoint* dp, int x, int y) {
     return true;
 }
 
-
+/*
+ * Returns true when given point is neighbouring border point
+ * from different segment
+ */
 bool DBScan::diffNeighbour(int x, int y, DataPoint *p) {
     
     if (movePossible(x, y) && fromDifferentCluster(p, x, y)) 
@@ -256,7 +265,10 @@ void DBScan::setBorderPoints() {
     }
 }
 
-
+/*
+ * Checks if a given cluster has its average colours and spatial coordinates
+ * recalculated
+ */
 bool DBScan::hasAvgValues(const Cluster *const cluster) {
     
     if (cluster->m_avgR < 0 && cluster->m_avgB < 0 && cluster->m_avgG < 0 &&
@@ -267,6 +279,9 @@ bool DBScan::hasAvgValues(const Cluster *const cluster) {
     return true;
 }
 
+/*
+ * Gets datapoint at x, y position in the image
+ */
 DataPoint* DBScan::getPointAt(int x, int y) {
     auto index = x * (m_imgCols)+y;
     return m_allPoints[index];
@@ -277,6 +292,10 @@ inline Cluster* DBScan:: getClusterAt(int pos) {
     return m_allClusters[pos - 1];
 }
 
+/*
+ * Computes merging distance2 and compares the distance with minimum
+ * obtained by far
+ */
 void DBScan::computeMergingDistance(const Cluster*const currClust, int nX, int nY, double* min, Cluster** minc) {
     double dist_c, dist_a, dist_2;
     
@@ -301,6 +320,9 @@ void DBScan::computeMergingDistance(const Cluster*const currClust, int nX, int n
     }
 }
 
+/*
+ * Merges 2 segments together to form bigger segment
+ */
 void DBScan::mergeClusters(Cluster* cluster, Cluster* minc) {
     Cluster *huge = nullptr;
     Cluster *less = nullptr;
@@ -310,11 +332,7 @@ void DBScan::mergeClusters(Cluster* cluster, Cluster* minc) {
     huge = (cluster->m_clusterSize > minc->m_clusterSize ? cluster : minc);
     less = (huge == cluster ? minc : cluster);
 
-    //lessSeed = less->m_clusterMemberPoints[0];
     hugeSeed = huge->m_clusterMemberPoints[0];
-
-    //lessSeed->m_seed->m_clusterId = huge->m_id;
-
     less->m_id = -1;
 
     for (auto& pt: less->m_clusterMemberPoints) {
@@ -326,10 +344,13 @@ void DBScan::mergeClusters(Cluster* cluster, Cluster* minc) {
     huge->computeAverages();
 }
 
-
-void DBScan::DBSmerge(unsigned int minClusterPoints) {
+/*
+ * Mergin approach after initial segmentation
+ */
+void DBScan::DBSmerge(unsigned int minClusterPoints, int* size, int numOfClusters) {
     
     for (auto& currClust: m_allClusters) {
+        if ((*size) == numOfClusters) return;
 
         if (currClust->m_id < 0) continue;
         
@@ -359,8 +380,8 @@ void DBScan::DBSmerge(unsigned int minClusterPoints) {
             }
 
             if (minc != nullptr && minc!=currClust) {
-                
                 mergeClusters(currClust, minc);
+                (*size)--;
             }
         }
     }
