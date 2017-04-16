@@ -1,6 +1,3 @@
-﻿  DBScan.cpp
-c:\users\stevu\disk google\skola\6.semester\bp2_info_b\superpixel_image_segmentation\bp_xstevuliakm_vizualna_segmentacia_objektov\dbscan\dbscan.cpp(139): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-c:\users\stevu\disk google\skola\6.semester\bp2_info_b\superpixel_image_segmentation\bp_xstevuliakm_vizualna_segmentacia_objektov\dbscan\dbscan.cpp(143): warning C4018: '<': signed/unsigned mismatch
-c:\users\stevu\disk google\skola\6.semester\bp2_info_b\superpixel_image_segmentation\bp_xstevuliakm_vizualna_segmentacia_objektov\dbscan\dbscan.cpp(357): warning C4018: '<': signed/unsigned mismatch
+﻿  main.cpp
   BP_xstevuliakm_vizualna_segmentacia_objektov.vcxproj -> C:\Users\stevu\Disk Google\skola\6.semester\BP2_INFO_B\superpixel_image_segmentation\x64\Debug\BP_xstevuliakm_vizualna_segmentacia_objektov.exe
   BP_xstevuliakm_vizualna_segmentacia_objektov.vcxproj -> C:\Users\stevu\Disk Google\skola\6.semester\BP2_INFO_B\superpixel_image_segmentation\x64\Debug\BP_xstevuliakm_vizualna_segmentacia_objektov.pdb (Full PDB)

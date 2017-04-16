@@ -5,7 +5,7 @@ class Cluster
 {
 public:
     
-    Cluster(int id, vector_t& points);
+    Cluster(int id, vector_t* points);
     ~Cluster();
 
     // cluster id
@@ -23,9 +23,8 @@ public:
     int m_clusterSize;
 
     // adjacent data points
-    vector_t m_clusterMemberPoints;
+    vector_t* m_clusterMemberPoints;
 
-    void addMemberPoints(vector_t& dp);
     void computeAverages();
     void updateSize();
 };

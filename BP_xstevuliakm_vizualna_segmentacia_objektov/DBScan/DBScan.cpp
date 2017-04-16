@@ -40,7 +40,7 @@ std::vector<DataPoint*> DBScan::convertToDataPoint(const cv::Mat& color, const d
 
             if ((depthPoint < 1)) depthPoint = -1.0;
 
-            auto *dp = new DataPoint
+            DataPoint* dp = new DataPoint
 		        (
                     i,
                     j,
@@ -84,12 +84,12 @@ bool DBScan::isInRadius(DataPoint *seed, DataPoint *center, DataPoint *potN, dou
 /*
  * Checks whether appropriate
  */
-void DBScan::assessNeighbour(DataPoint* dp, DataPoint* seed, DataPoint* center, vector_t& neighbours, 
+void DBScan::assessNeighbour(DataPoint* dp, DataPoint* seed, DataPoint* center, vector_t* neighbours, 
                                 double epsilon, double depthThreshold) const {
     
     if (!dp->m_seed && !dp->m_label && isInRadius(seed, center, dp, epsilon, depthThreshold) == true) {
         dp->m_label = DataPoint::VISITED;
-        neighbours.push_back(dp);
+        neighbours->push_back(dp);
     }
 }
 
@@ -111,21 +111,22 @@ void DBScan::DBScanIteration(double epsilon, double depthThreshold, unsigned int
         seedPoint->m_clusterId = m_numClusters;
         seedPoint->m_seed = seedPoint;
 
-        vector_t neighbours;
-        neighbours.push_back(seedPoint);
+        vector_t* neighbours = new vector_t;
+        neighbours->reserve(minClusterPoints);
+        neighbours->push_back(seedPoint);
         
         regionQuery(seedPoint, seedPoint, neighbours, epsilon, depthThreshold);
 
         unsigned j = 0;
         unsigned assigned = 1;
 
-        while (j < neighbours.size()) {
+        while (j < neighbours->size()) {
             
-            neighbours[j]->m_seed = seedPoint;
+            neighbours->at(j)->m_seed = seedPoint;
             assigned++;
 
             if (assigned < minClusterPoints) 
-                regionQuery(seedPoint, neighbours[j], neighbours, epsilon, depthThreshold);
+                regionQuery(seedPoint, neighbours->at(j), neighbours, epsilon, depthThreshold);
                         
             j++;
         }
@@ -136,17 +137,22 @@ void DBScan::DBScanIteration(double epsilon, double depthThreshold, unsigned int
         m_numClusters++;
     }
 
+    auto end = std::chrono::steady_clock::now();
+    std::cout << "Time difference clustering = " << std::chrono::duration_cast<std::chrono::microseconds>
+        (end - start).count() / 1000000 << std::endl;
+
     int size = m_allClusters.size();
 
     printf("superpixels before : %d \n", size);
 
+    start = std::chrono::steady_clock::now();
     for (int i = 0; i < mergingFactor; i++)
         DBSmerge(minClusterPoints, &size, numOfClusters);
+    end = std::chrono::steady_clock::now();
     
+    std::cout << "Time difference merging = " << std::chrono::duration_cast<std::chrono::microseconds>
+        (end - start).count() / 1000000 << std::endl;
     
-    auto end = std::chrono::steady_clock::now();
-    std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::microseconds>
-        (end - start).count()/1000000 << std::endl;
 
     int num = 0;
     for (auto& c: m_allClusters) {
@@ -160,7 +166,7 @@ void DBScan::DBScanIteration(double epsilon, double depthThreshold, unsigned int
  * Looks up for 4 neighbours whether possible
  * to form segment together
  */
-void DBScan::regionQuery(DataPoint* seed, DataPoint* center, vector_t& neighbours, double epsilon, double depthThreshold) {
+void DBScan::regionQuery(DataPoint* seed, DataPoint* center, vector_t* neighbours, double epsilon, double depthThreshold) {
     auto centerX{ center->m_x };
     auto centerY{ center->m_y }; 
     
@@ -324,31 +330,45 @@ void DBScan::computeMergingDistance(const Cluster*const currClust, int nX, int n
  * Merges 2 segments together to form bigger segment
  */
 void DBScan::mergeClusters(Cluster* cluster, Cluster* minc) {
-    Cluster *huge = nullptr;
-    Cluster *less = nullptr;
-    DataPoint *lessSeed = nullptr;
-    DataPoint *hugeSeed = nullptr;
+    Cluster *huge;
+    Cluster *less;
+    DataPoint *hugeSeed;
 
     huge = (cluster->m_clusterSize > minc->m_clusterSize ? cluster : minc);
     less = (huge == cluster ? minc : cluster);
 
-    hugeSeed = huge->m_clusterMemberPoints[0];
+    hugeSeed = huge->m_clusterMemberPoints->at(0);
     less->m_id = -1;
 
-    for (auto& pt: less->m_clusterMemberPoints) {
-        pt->m_seed = hugeSeed;
-        huge->m_clusterMemberPoints.push_back(pt);
+    for (int i = 0; i < less->m_clusterMemberPoints->size(); i++) {
+        DataPoint *curr = less->m_clusterMemberPoints->at(i);
+        curr->m_seed = hugeSeed;
+        huge->m_clusterMemberPoints->push_back(curr);
 
     }
     huge->updateSize();
-    huge->computeAverages();
+
+    huge->m_avgR += less->m_avgR;
+    huge->m_avgR /= 2;
+
+    huge->m_avgG += less->m_avgG;
+    huge->m_avgG /= 2;
+
+    huge->m_avgB += less->m_avgB;
+    huge->m_avgB /= 2;
+
+    huge->m_avgX += less->m_avgX;
+    huge->m_avgX /= 2;
+
+    huge->m_avgY += less->m_avgY;
+    huge->m_avgY /= 2;
 }
 
 /*
  * Mergin approach after initial segmentation
  */
 void DBScan::DBSmerge(unsigned int minClusterPoints, int* size, int numOfClusters) {
-    
+    printf("Merging\n");
     for (auto& currClust: m_allClusters) {
         if ((*size) == numOfClusters) return;
 
@@ -360,7 +380,9 @@ void DBScan::DBSmerge(unsigned int minClusterPoints, int* size, int numOfCluster
 
             if (!hasAvgValues(currClust)) currClust->computeAverages();
 
-            for (auto& pt: currClust->m_clusterMemberPoints) {
+            for (int i = 0; i < currClust->m_clusterMemberPoints->size(); i++) {
+                
+                DataPoint *pt = currClust->m_clusterMemberPoints->at(i);
                                 
                 if (diffNeighbour(pt->m_x, pt->m_y + 1, pt)) {
                     (computeMergingDistance(currClust, pt->m_x, pt->m_y + 1,&minDist, &minc));

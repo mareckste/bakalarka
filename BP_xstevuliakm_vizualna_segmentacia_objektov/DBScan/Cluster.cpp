@@ -3,26 +3,17 @@
 /*
  * Initializes cluster
  */
-Cluster::Cluster(int id, vector_t& points)
-    : m_id{ id }, m_clusterSize{ static_cast<int>(points.size()) }
+Cluster::Cluster(int id, vector_t* points)
+    : m_id{ id }, 
+    m_clusterSize{ static_cast<int>(points->size()) },
+    m_clusterMemberPoints{ points }     
 {
-    addMemberPoints(points);
 }
 
 Cluster::~Cluster()
 {
 }
 
-/*
- * Initializes cluster by its members
- */
-void Cluster::addMemberPoints(vector_t& points) {
-    for (auto &pt : points) {
-        if (pt != nullptr)
-            m_clusterMemberPoints.push_back(pt);
-
-    }
-}
 
 void Cluster::computeAverages() {
     
@@ -35,13 +26,13 @@ void Cluster::computeAverages() {
         m_avgX = 0;
         m_avgY = 0;
         
-        for( auto &pt: m_clusterMemberPoints) {
-            m_avgR += pt->m_r;
-            m_avgG += pt->m_g;
-            m_avgB += pt->m_b;
+        for (int i = 0; i < m_clusterMemberPoints->size(); i++) {
+            m_avgR += m_clusterMemberPoints->at(i)->m_r;
+            m_avgG += m_clusterMemberPoints->at(i)->m_g;
+            m_avgB += m_clusterMemberPoints->at(i)->m_b;
 
-            m_avgX += pt->m_x;
-            m_avgY += pt->m_y;
+            m_avgX += m_clusterMemberPoints->at(i)->m_x;
+            m_avgY += m_clusterMemberPoints->at(i)->m_y;
         }
 
         m_avgR /= m_clusterSize;
@@ -54,5 +45,5 @@ void Cluster::computeAverages() {
 }
 
 void Cluster::updateSize() {
-    m_clusterSize = m_clusterMemberPoints.size();
+    m_clusterSize = m_clusterMemberPoints->size();
 }

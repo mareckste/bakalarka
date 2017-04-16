@@ -30,8 +30,9 @@ public:
 private:
 
 	bool isInRadius(DataPoint* seed, DataPoint* center, DataPoint* potN, double epsilon, double depthThreshold) const;
+    void assessNeighbour(DataPoint* dp, DataPoint* seed, DataPoint* center, vector_t* neighbours, double epsilon, double depthThreshold) const;
     void assessNeighbour(DataPoint* dp, DataPoint* seed, DataPoint* center, vector_t& neighbours, double epsilon, double depthThreshold) const;
-    void regionQuery(DataPoint* seed, DataPoint* center, vector_t& neighbours, double epsilon, double depthThreshold);
+    void regionQuery(DataPoint* seed, DataPoint* center, vector_t* neighbours, double epsilon, double depthThreshold);
     bool movePossible(int x, int y) const;
     DataPoint* getPointAt(int x, int y);
     Cluster* getClusterAt(int pos);
