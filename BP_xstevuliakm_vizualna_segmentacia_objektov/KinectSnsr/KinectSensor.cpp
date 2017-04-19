@@ -84,7 +84,7 @@ void KinectSensor::initSensor() {
         m_depthMatrix = new int[m_colorWidth * m_colorHeight];
 
         if (m_depthToRGBA && m_rgbaToDepth && m_colorBuffer && m_depthBuffer) {
-            std::cout << "Initialization successfull\n Color resolution = " << m_colorWidth << " x " << m_colorHeight <<
+            std::cout << "Initialization successfull\nColor resolution = " << m_colorWidth << " x " << m_colorHeight <<
                 "\nDepth resolution = " << m_depthWidth << " x " << m_depthHeight << std::endl;
         }
         else {
@@ -220,7 +220,7 @@ void KinectSensor::getMappedDepthData(cv::Mat& outputMat) {
     }
 }
 
-void KinectSensor::getColorData(cv::Mat& outputMat, double* depthMat) {
+void KinectSensor::getColorData(cv::Mat& outputMat, cv::Mat& depthMat) {
     IColorFrame* colorFrame = nullptr;
     IColorFrameReference* colorFrameRef = nullptr;
 
@@ -240,12 +240,14 @@ void KinectSensor::getColorData(cv::Mat& outputMat, double* depthMat) {
                         DepthSpacePoint p = m_rgbaToDepth[i * m_colorWidth + j];
 
                         if (p.X < 0 || p.Y < 0 || p.X > m_depthWidth || p.Y > m_depthHeight) {
-                            depthMat[i * m_colorWidth + j] = -1;
+                            //depthMat.data[i * m_colorWidth + j] = -1;
+                            depthMat.at<UINT16>(i, j) = -1;
                         }
                         else {
                             int index = static_cast<int>(p.X + 0.5f) + m_depthWidth * static_cast<int>(p.Y + 0.5f);
                             // m_depthMatrix[i * m_colorWidth + j] = static_cast<int> (255 * (m_depthBuffer[index] - 0) / 3200.0);
-                            depthMat[i * m_colorWidth + j] = m_depthBuffer[index];
+                            //depthMat.data[i * m_colorWidth + j] = m_depthBuffer[index];
+                            depthMat.at<UINT16>(i, j) = m_depthBuffer[index];
                         }
 
                         outputMat.at<cv::Vec3b>(i, j)[0] = m_colorBuffer[4 * (i * m_colorWidth + j) + 0];

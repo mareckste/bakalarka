@@ -24,7 +24,7 @@ public:
     cluster_vec_t m_allClusters;
 
 
-	vector_t convertToDataPoint(const cv::Mat& color, const double* depth);
+	vector_t convertToDataPoint(const cv::Mat& color, const cv::Mat& depth);
 	void DBScanIteration(double epsilon, double depthThreshold, unsigned int numOfClusters, unsigned int mergingFactor);
 
 private:

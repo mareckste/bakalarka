@@ -4,8 +4,6 @@
 #include <chrono>
 #include <iostream>
 
-// ==============================CODE======================================================================
-
 /*
  * Inits the class by the size of the color
  */
@@ -29,16 +27,15 @@ DBScan::~DBScan() {
  * Converts cv color data to vector of pointers to DataPoint
  * objects stored in current DBScan class  
  */
-std::vector<DataPoint*> DBScan::convertToDataPoint(const cv::Mat& color, const double *depth) {
+std::vector<DataPoint*> DBScan::convertToDataPoint(const cv::Mat& color, const cv::Mat& depth) {
     double depthPoint = -1;
 
     for (auto i = 0; i < m_imgRows; i++) {
 		for (auto j = 0; j < m_imgCols; j++) {
-            
-		    if (depth != nullptr)
-                depthPoint = depth[i * m_imgCols + j];
+            		    
+            depthPoint = depth.at<UINT16>(i,j);
 
-            if ((depthPoint < 1)) depthPoint = -1.0;
+            if ((depthPoint == UINT16_MAX)) depthPoint = -1.0;
 
             DataPoint* dp = new DataPoint
 		        (
@@ -112,7 +109,7 @@ void DBScan::DBScanIteration(double epsilon, double depthThreshold, unsigned int
         seedPoint->m_seed = seedPoint;
 
         vector_t* neighbours = new vector_t;
-        neighbours->reserve(minClusterPoints);
+        neighbours->reserve(200);
         neighbours->push_back(seedPoint);
         
         regionQuery(seedPoint, seedPoint, neighbours, epsilon, depthThreshold);
@@ -146,8 +143,10 @@ void DBScan::DBScanIteration(double epsilon, double depthThreshold, unsigned int
     printf("superpixels before : %d \n", size);
 
     start = std::chrono::steady_clock::now();
-    for (int i = 0; i < mergingFactor; i++)
+    
+    for (auto i = 0; i < mergingFactor; i++)
         DBSmerge(minClusterPoints, &size, numOfClusters);
+    
     end = std::chrono::steady_clock::now();
     
     std::cout << "Time difference merging = " << std::chrono::duration_cast<std::chrono::microseconds>
@@ -264,7 +263,7 @@ bool DBScan::checkBorder(DataPoint* pt) {
  * Iterates over all points and marks m_border pixels
  */
 void DBScan::setBorderPoints() {
-    for (auto pt: m_allPoints) {
+    for (auto& pt: m_allPoints) {
         if (pt != nullptr) {
             checkBorder(pt);
         }

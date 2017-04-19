@@ -13,7 +13,7 @@ public:
     void mapDepthData();
     void getMappedColorData(cv::Mat& mat);
     void getMappedDepthData(cv::Mat& outputMat);
-    void getColorData(cv::Mat& outputMat, double* depthMat);
+    void getColorData(cv::Mat& outputMat, cv::Mat& depthMat);
     int *getDepthMatrix() const;
 private:
     // sensor

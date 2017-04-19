@@ -10,8 +10,8 @@ Cluster::Cluster(int id, vector_t* points)
 {
 }
 
-Cluster::~Cluster()
-{
+Cluster::~Cluster() {
+    delete m_clusterMemberPoints;
 }
 
 
