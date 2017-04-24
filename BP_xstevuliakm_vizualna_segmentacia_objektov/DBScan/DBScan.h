@@ -24,14 +24,12 @@ public:
     cluster_vec_t m_allClusters;
 
 
-	vector_t convertToDataPoint(const cv::Mat& color, const cv::Mat& depth);
+	void convertToDataPoint(const cv::Mat& color, const cv::Mat& depth);
 	void DBScanIteration(double epsilon, double depthThreshold, unsigned int numOfClusters, unsigned int mergingFactor);
 
 private:
-
 	bool isInRadius(DataPoint* seed, DataPoint* center, DataPoint* potN, double epsilon, double depthThreshold) const;
     void assessNeighbour(DataPoint* dp, DataPoint* seed, DataPoint* center, vector_t* neighbours, double epsilon, double depthThreshold) const;
-    void assessNeighbour(DataPoint* dp, DataPoint* seed, DataPoint* center, vector_t& neighbours, double epsilon, double depthThreshold) const;
     void regionQuery(DataPoint* seed, DataPoint* center, vector_t* neighbours, double epsilon, double depthThreshold);
     bool movePossible(int x, int y) const;
     DataPoint* getPointAt(int x, int y);
@@ -43,7 +41,8 @@ private:
     static bool hasAvgValues(const Cluster*const cluster);
     void computeMergingDistance(const Cluster*const currClust, int nX, int nY, double* min, Cluster** minc);
     static void mergeClusters(Cluster* cluster, Cluster* minc);
-    void DBSmerge(unsigned minClusterPoints, int* size, int numOfClusters);
+    void getLargestNeighbour(Cluster* cluster, int i, int m_y, double* min_dist, Cluster** minc);
+    void DBSmerge(unsigned int minClusterPoints, int* size, int numOfClusters, int ppFlag);
 
 };
 

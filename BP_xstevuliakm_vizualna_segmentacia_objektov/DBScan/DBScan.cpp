@@ -3,6 +3,7 @@
 #include <ctime>
 #include <chrono>
 #include <iostream>
+#include <iterator>
 
 /*
  * Inits the class by the size of the color
@@ -27,8 +28,9 @@ DBScan::~DBScan() {
  * Converts cv color data to vector of pointers to DataPoint
  * objects stored in current DBScan class  
  */
-std::vector<DataPoint*> DBScan::convertToDataPoint(const cv::Mat& color, const cv::Mat& depth) {
-    double depthPoint = -1;
+void DBScan::convertToDataPoint(const cv::Mat& color, const cv::Mat& depth) {
+    std::cout << "Converting data" << std::endl;
+    double depthPoint;
 
     for (auto i = 0; i < m_imgRows; i++) {
 		for (auto j = 0; j < m_imgCols; j++) {
@@ -37,21 +39,19 @@ std::vector<DataPoint*> DBScan::convertToDataPoint(const cv::Mat& color, const c
 
             if ((depthPoint == UINT16_MAX)) depthPoint = -1.0;
 
-            DataPoint* dp = new DataPoint
-		        (
-                    i,
-                    j,
-                    depthPoint,
-                    color.at<cv::Vec3b>(i, j)[2],
-                    color.at<cv::Vec3b>(i, j)[1], 
-                    color.at<cv::Vec3b>(i, j)[0], 
-                    i * m_imgCols
-                );
+            DataPoint* dp = new DataPoint(
+                            i,
+                            j,
+                            depthPoint,
+                            color.at<cv::Vec3b>(i, j)[2],
+                            color.at<cv::Vec3b>(i, j)[1], 
+                            color.at<cv::Vec3b>(i, j)[0], 
+                            i * m_imgCols
+                        );
 
 		    m_allPoints.push_back(dp);
 		}
 	}
-	return m_allPoints;
 }
 
 /* Measures distance between 2 points to expand neighbourhood
@@ -66,14 +66,18 @@ bool DBScan::isInRadius(DataPoint *seed, DataPoint *center, DataPoint *potN, dou
         if (scale > depthThreshold) return false;
     }
 
-    distance_c = sqrt(pow(potN->m_r - center->m_r, 2) + pow(potN->m_g - center->m_g, 2)
+    /*distance_c = sqrt(pow(potN->m_r - center->m_r, 2) + pow(potN->m_g - center->m_g, 2)
                         + pow(potN->m_b - center->m_b, 2));
 
     distance_s = sqrt(pow(potN->m_r - seed->m_r, 2) + pow(potN->m_g - seed->m_g, 2)
-                        + pow(potN->m_b - seed->m_b, 2));
+                        + pow(potN->m_b - seed->m_b, 2));*/
+    distance_c = (potN->m_r - center->m_r)*(potN->m_r - center->m_r) + (potN->m_g - center->m_g)*(potN->m_g - center->m_g)
+        + (potN->m_b - center->m_b)*(potN->m_b - center->m_b);
+    distance_s = (potN->m_r - seed->m_r)*(potN->m_r - seed->m_r) + (potN->m_g - seed->m_g)*(potN->m_g - seed->m_g)
+        + (potN->m_b - seed->m_b)*(potN->m_b - seed->m_b);
           
      
-    //std::cout << "Distance: " << distance_c + distance_s << std::endl;
+   // std::cout << "Distance: " << distance_c + distance_s << std::endl;
     return ((distance_s + distance_c) <= epsilon ? true : false);
 }
 
@@ -95,7 +99,7 @@ void DBScan::assessNeighbour(DataPoint* dp, DataPoint* seed, DataPoint* center, 
  */
 void DBScan::DBScanIteration(double epsilon, double depthThreshold, unsigned int numOfClusters, 
                         unsigned int mergingFactor) {
-
+    std::cout << "Segmenting" << std::endl;
     auto minClusterPoints = (m_imgRows * m_imgCols) / numOfClusters;
     auto start = std::chrono::steady_clock::now();
 
@@ -140,12 +144,18 @@ void DBScan::DBScanIteration(double epsilon, double depthThreshold, unsigned int
 
     int size = m_allClusters.size();
 
-    printf("superpixels before : %d \n", size);
+
+    std::cout << "Superpixels before: " << size << std::endl;
 
     start = std::chrono::steady_clock::now();
-    
-    for (auto i = 0; i < mergingFactor; i++)
-        DBSmerge(minClusterPoints, &size, numOfClusters);
+    std::cout << "Merging phase" << std::endl;
+    for (auto i = 0; i < mergingFactor; i++) {
+        DBSmerge(minClusterPoints, &size, numOfClusters, 0);
+        if (size == numOfClusters) break;
+    }
+
+    std::cout << "Refining phase" << std::endl;
+    DBSmerge(minClusterPoints, &size, numOfClusters, 1);
     
     end = std::chrono::steady_clock::now();
     
@@ -153,11 +163,19 @@ void DBScan::DBScanIteration(double epsilon, double depthThreshold, unsigned int
         (end - start).count() / 1000000 << std::endl;
     
 
-    int num = 0;
+    int num = 0; int numsmall = 0;
+    std::cout << "Counting clusters" << std::endl;
     for (auto& c: m_allClusters) {
-        if (c->m_id != -1) num++;
+        if (c->m_id != -1) {
+            num++; 
+           // printf("id: %d -- size: %d\n", c->m_id, c->m_clusterSize);
+            if (c->m_clusterSize < minClusterPoints / 9) numsmall++;
+        }
     }
-    printf("superpixels after: %d \n", num);
+
+    std::cout << "superpixels after:" << num << "small pts:" << numsmall << std::endl;
+    
+    std::cout << "Counting border points" << std::endl;
     setBorderPoints();
 }
  
@@ -302,7 +320,7 @@ inline Cluster* DBScan:: getClusterAt(int pos) {
  * obtained by far
  */
 void DBScan::computeMergingDistance(const Cluster*const currClust, int nX, int nY, double* min, Cluster** minc) {
-    double dist_c, dist_a, dist_2;
+    double dist_c, dist_a, dist_d, dist_2;
     
     auto neighClustId = getPointAt(nX, nY)->m_seed->m_clusterId;
     auto neighClust = getClusterAt(neighClustId);
@@ -310,15 +328,23 @@ void DBScan::computeMergingDistance(const Cluster*const currClust, int nX, int n
     
     if (!hasAvgValues(neighClust)) neighClust->computeAverages();
 
-    dist_c = sqrt(pow(currClust->m_avgR-neighClust->m_avgR, 2) + pow(currClust->m_avgB - neighClust->m_avgB, 2)
+    dist_d = (abs(neighClust->m_avgD - currClust->m_avgD) > 15 ? 10000 : 0);
+    //std::cout << abs(neighClust->m_avgD - currClust->m_avgD) << std::endl;
+
+
+    /*dist_c = sqrt(pow(currClust->m_avgR-neighClust->m_avgR, 2) + pow(currClust->m_avgB - neighClust->m_avgB, 2)
         + pow(currClust->m_avgG - neighClust->m_avgG, 2));
     
-    dist_a = sqrt(pow(currClust->m_avgX - neighClust->m_avgX, 2) + pow(currClust->m_avgY - neighClust->m_avgY, 2));
+    dist_a = sqrt(pow(currClust->m_avgX - neighClust->m_avgX, 2) + pow(currClust->m_avgY - neighClust->m_avgY, 2));*/
+    dist_c = (currClust->m_avgR - neighClust->m_avgR)*(currClust->m_avgR - neighClust->m_avgR)
+        + (currClust->m_avgB - neighClust->m_avgB)*(currClust->m_avgB - neighClust->m_avgB)
+        + (currClust->m_avgG - neighClust->m_avgG)*(currClust->m_avgG - neighClust->m_avgG);
 
-    dist_2 =  dist_c + dist_a;
+    dist_a = (currClust->m_avgX - neighClust->m_avgX)*(currClust->m_avgX - neighClust->m_avgX)
+        + (currClust->m_avgY - neighClust->m_avgY)*(currClust->m_avgY - neighClust->m_avgY);
 
-   // printf("%lf\n", dist_2);
-
+    dist_2 =  dist_c + 2*dist_a + dist_d;
+    //std::cout << dist_2 << std::endl;
     if (dist_2 < *min) {
         *min = dist_2;
         *minc = neighClust;
@@ -343,8 +369,8 @@ void DBScan::mergeClusters(Cluster* cluster, Cluster* minc) {
         DataPoint *curr = less->m_clusterMemberPoints->at(i);
         curr->m_seed = hugeSeed;
         huge->m_clusterMemberPoints->push_back(curr);
-
     }
+
     huge->updateSize();
 
     huge->m_avgR += less->m_avgR;
@@ -356,6 +382,9 @@ void DBScan::mergeClusters(Cluster* cluster, Cluster* minc) {
     huge->m_avgB += less->m_avgB;
     huge->m_avgB /= 2;
 
+    huge->m_avgD += less->m_avgD;
+    huge->m_avgD /= 2;
+
     huge->m_avgX += less->m_avgX;
     huge->m_avgX /= 2;
 
@@ -363,19 +392,22 @@ void DBScan::mergeClusters(Cluster* cluster, Cluster* minc) {
     huge->m_avgY /= 2;
 }
 
+
 /*
  * Mergin approach after initial segmentation
  */
-void DBScan::DBSmerge(unsigned int minClusterPoints, int* size, int numOfClusters) {
-    printf("Merging\n");
+void DBScan::DBSmerge(unsigned int minClusterPoints, int* size, int numOfClusters, int ppFlag) {
+    
     for (auto& currClust: m_allClusters) {
         if ((*size) == numOfClusters) return;
 
         if (currClust->m_id < 0) continue;
         
-        if (currClust->m_clusterSize < minClusterPoints) {
-            Cluster *minc = nullptr;
-            double minDist = 100000;
+        if (currClust->m_clusterSize < (minClusterPoints / 2 /* 1.33*/)) {
+            Cluster *minc = nullptr; //6k
+            double minDist = (!ppFlag ? 100000 : 0);
+
+            if (ppFlag && (currClust->m_clusterSize > (minClusterPoints / 10))) continue;
 
             if (!hasAvgValues(currClust)) currClust->computeAverages();
 
@@ -384,20 +416,37 @@ void DBScan::DBSmerge(unsigned int minClusterPoints, int* size, int numOfCluster
                 DataPoint *pt = currClust->m_clusterMemberPoints->at(i);
                                 
                 if (diffNeighbour(pt->m_x, pt->m_y + 1, pt)) {
-                    (computeMergingDistance(currClust, pt->m_x, pt->m_y + 1,&minDist, &minc));
+                    if (!ppFlag)
+                        computeMergingDistance(currClust, pt->m_x, pt->m_y + 1,&minDist, &minc);
+                    else {
+                        getLargestNeighbour(currClust, pt->m_x, pt->m_y + 1, &minDist, &minc);
+                    }
                 }
 
                 if (diffNeighbour(pt->m_x - 1, pt->m_y, pt)) {
-                    (computeMergingDistance(currClust, pt->m_x - 1, pt->m_y, &minDist, &minc));
+                    if (!ppFlag)
+                        computeMergingDistance(currClust, pt->m_x - 1, pt->m_y, &minDist, &minc);
+                    else {
+                        getLargestNeighbour(currClust, pt->m_x - 1, pt->m_y, &minDist, &minc);
+                    }
                 }
 
                 if (diffNeighbour(pt->m_x, pt->m_y - 1, pt)) {
-                    (computeMergingDistance(currClust, pt->m_x, pt->m_y - 1, &minDist, &minc));
+                    if (!ppFlag)
+                        computeMergingDistance(currClust, pt->m_x, pt->m_y - 1, &minDist, &minc);
+                    else {
+                        getLargestNeighbour(currClust, pt->m_x, pt->m_y - 1, &minDist, &minc);
+                    }
                 }
 
                 if (diffNeighbour(pt->m_x + 1, pt->m_y, pt)) {
-                    (computeMergingDistance(currClust, pt->m_x + 1, pt->m_y, &minDist, &minc));
+                    if (!ppFlag)
+                        computeMergingDistance(currClust, pt->m_x + 1, pt->m_y, &minDist, &minc);
+                    else {
+                        getLargestNeighbour(currClust, pt->m_x + 1, pt->m_y, &minDist, &minc);
+                    }
                 }
+                
             }
 
             if (minc != nullptr && minc!=currClust) {
@@ -405,5 +454,15 @@ void DBScan::DBSmerge(unsigned int minClusterPoints, int* size, int numOfCluster
                 (*size)--;
             }
         }
+    }
+}
+
+void DBScan::getLargestNeighbour(Cluster *currCluster, int nX, int nY, double* min_dist, Cluster** minc) {
+    auto neighClustId = getPointAt(nX, nY)->m_seed->m_clusterId;
+    auto neighClust = getClusterAt(neighClustId);
+
+    if ((*min_dist) < neighClust->m_clusterSize) {
+        *min_dist = neighClust->m_clusterSize;
+        *minc = neighClust;
     }
 }

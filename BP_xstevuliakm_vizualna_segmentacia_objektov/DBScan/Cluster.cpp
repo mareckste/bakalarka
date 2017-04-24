@@ -18,6 +18,7 @@ Cluster::~Cluster() {
 void Cluster::computeAverages() {
     
     if (m_clusterSize > 0) {
+        int dp = 0;
         
         m_avgR = 0;
         m_avgG = 0;
@@ -25,14 +26,22 @@ void Cluster::computeAverages() {
 
         m_avgX = 0;
         m_avgY = 0;
+        m_avgD = 0;
         
         for (int i = 0; i < m_clusterMemberPoints->size(); i++) {
-            m_avgR += m_clusterMemberPoints->at(i)->m_r;
-            m_avgG += m_clusterMemberPoints->at(i)->m_g;
-            m_avgB += m_clusterMemberPoints->at(i)->m_b;
+            auto currPoint = m_clusterMemberPoints->at(i);
 
-            m_avgX += m_clusterMemberPoints->at(i)->m_x;
-            m_avgY += m_clusterMemberPoints->at(i)->m_y;
+            m_avgR += currPoint->m_r;
+            m_avgG += currPoint->m_g;
+            m_avgB += currPoint->m_b;
+
+            m_avgX += currPoint->m_x;
+            m_avgY += currPoint->m_y;
+
+            if (currPoint->m_depth != -1) {
+                m_avgD += currPoint->m_depth;
+                dp++;
+            }
         }
 
         m_avgR /= m_clusterSize;
@@ -41,6 +50,11 @@ void Cluster::computeAverages() {
 
         m_avgX /= m_clusterSize;
         m_avgY /= m_clusterSize;
+        
+        if (dp > 0)
+            m_avgD /= dp;
+        else
+            m_avgD = 0;
     }
 }
 

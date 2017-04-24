@@ -15,6 +15,7 @@ public:
     double m_avgR = -1;
     double m_avgG = -1;
     double m_avgB = -1;
+    double m_avgD = -1;
 
     double m_avgX = -1;
     double m_avgY = -1;
