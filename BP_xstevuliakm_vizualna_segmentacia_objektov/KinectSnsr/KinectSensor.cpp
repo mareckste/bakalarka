@@ -1,16 +1,21 @@
+/*________________________________________________________________________KINECT_SENSOR________________________________________________________________________*/
 #include "KinectSensor.h"
 #include <iostream>
 #include <memory>
 #include <vector>
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Inits sensor
+////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 KinectSensor::KinectSensor() {
     initSensor();
 }
 
-/*
- * Destructs all member arrays used during the frame processing stage
- */
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Destructs all member arrays used during the frame processing stage
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 KinectSensor::~KinectSensor() {
 
     if (m_coordinateMapper) m_coordinateMapper->Release();
@@ -25,12 +30,12 @@ KinectSensor::~KinectSensor() {
     if (m_colorBuffer) delete[] m_colorBuffer;
     if (m_depthBuffer) delete[] m_depthBuffer;
     if (m_rgbaToDepth) delete[] m_rgbaToDepth;
-    if (m_depthMatrix) delete[] m_depthMatrix;
 }
 
-/*
- * Initializes Kinect sensor and the class member buffers
- */
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Initializes Kinect sensor and the class member buffers
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void KinectSensor::initSensor() {
     short successFlag = 0;
 
@@ -42,7 +47,8 @@ void KinectSensor::initSensor() {
     if (m_sensor) {
         m_sensor->get_CoordinateMapper(&m_coordinateMapper);
         m_sensor->Open();
-        m_sensor->OpenMultiSourceFrameReader(FrameSourceTypes_Depth | FrameSourceTypes_Color, &m_multiSrcFrameRdr);
+        m_sensor->OpenMultiSourceFrameReader(FrameSourceTypes_Depth | FrameSourceTypes_Color, 
+                                                &m_multiSrcFrameRdr);
     }
 
     IColorFrameSource* colorFrameSource;
@@ -81,7 +87,6 @@ void KinectSensor::initSensor() {
         m_rgbaToDepth = new DepthSpacePoint[m_colorWidth * m_colorHeight];
         m_colorBuffer = new BYTE[m_colorWidth * m_colorHeight * 4];
         m_depthBuffer = new UINT16[m_depthWidth * m_depthHeight];
-        m_depthMatrix = new int[m_colorWidth * m_colorHeight];
 
         if (m_depthToRGBA && m_rgbaToDepth && m_colorBuffer && m_depthBuffer) {
             std::cout << "Initialization successfull\nColor resolution = " << m_colorWidth << " x " << m_colorHeight <<
@@ -98,10 +103,11 @@ void KinectSensor::initSensor() {
     }
 }
 
-/*
- * Initializes coordinate mapper and space point arrays to map 
- * back and forth between m_depth and color
- */
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Initializes coordinate mapper and space point arrays to map 
+// back and forth between m_depth and color
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void KinectSensor::mapDepthData() {
     IDepthFrame *depthFrame = nullptr;
     IDepthFrameReference *depthFrameRef = nullptr;
@@ -134,10 +140,11 @@ void KinectSensor::mapDepthData() {
     }
 }
 
-/*
- * Maps depthframe to colorspace 
- * and initializes the cv Matrix with color values
- */
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Maps depthframe to colorspace 
+// and initializes the cv Matrix with color values
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void KinectSensor::getMappedColorData(cv::Mat& outputMat) {
     IColorFrame* colorFrame = nullptr;
     IColorFrameReference* colorFrameRef = nullptr;
@@ -179,10 +186,11 @@ void KinectSensor::getMappedColorData(cv::Mat& outputMat) {
     }
 }
 
-/*
- * Maps color frame to m_depth space
- * and initializes the cv Matrix with color values
- */
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Maps color frame to m_depth space
+// and initializes the cv Matrix with color values
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void KinectSensor::getMappedDepthData(cv::Mat& outputMat) {
     IDepthFrame* depthFrame = nullptr;
     IDepthFrameReference* depthFrameRef = nullptr;
@@ -220,6 +228,10 @@ void KinectSensor::getMappedDepthData(cv::Mat& outputMat) {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Fills output mat with color data and depth mat with depth data
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void KinectSensor::getColorData(cv::Mat& outputMat, cv::Mat& depthMat) {
     IColorFrame* colorFrame = nullptr;
     IColorFrameReference* colorFrameRef = nullptr;
@@ -239,14 +251,10 @@ void KinectSensor::getColorData(cv::Mat& outputMat, cv::Mat& depthMat) {
                     for (int j = 0; j < m_colorWidth; ++j) {
                         DepthSpacePoint p = m_rgbaToDepth[i * m_colorWidth + j];
 
-                        if (p.X < 0 || p.Y < 0 || p.X > m_depthWidth || p.Y > m_depthHeight) {
-                            //depthMat.data[i * m_colorWidth + j] = -1;
+                        if (p.X < 0 || p.Y < 0 || p.X > m_depthWidth || p.Y > m_depthHeight) 
                             depthMat.at<UINT16>(i, j) = -1;
-                        }
                         else {
                             int index = static_cast<int>(p.X + 0.5f) + m_depthWidth * static_cast<int>(p.Y + 0.5f);
-                            // m_depthMatrix[i * m_colorWidth + j] = static_cast<int> (255 * (m_depthBuffer[index] - 0) / 3200.0);
-                            //depthMat.data[i * m_colorWidth + j] = m_depthBuffer[index];
                             depthMat.at<UINT16>(i, j) = m_depthBuffer[index];
                         }
 
@@ -263,10 +271,4 @@ void KinectSensor::getColorData(cv::Mat& outputMat, cv::Mat& depthMat) {
         }
     }
 }
-
-int* KinectSensor::getDepthMatrix() const {
-    if (m_depthMatrix != nullptr)
-        return m_depthMatrix;
-    
-    return nullptr;
-}
+/*________________________________________________________________________KINECT_SENSOR________________________________________________________________________*/

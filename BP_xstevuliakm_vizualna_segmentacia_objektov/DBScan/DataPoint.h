@@ -1,44 +1,43 @@
+/*________________________________________________________________________DATA_POINT________________________________________________________________________*/
 #pragma once
 
-class Cluster;
+class Cluster;                                                                      // circular depency
 
 class DataPoint
 {
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // PUBLIC MEMBERS
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 public:
      enum Label {
         UNLABELED,
-        UNVISITED,
         VISITED
     };
-    //Constructor
-    DataPoint(int x, int y, double d, int r, int g, int b, int width);
+    
+    DataPoint(int x, int y, double d, int r, int g, int b, int width);              // Constructor
   
-    //Spatial coordinates
-	int m_x;
+    
+	int m_x;                                                                        // Spatial coordinates
 	int m_y;
     
     DataPoint* m_seed = nullptr;
-    //3D coordinate
-    double m_depth;
+    
+    double m_depth;                                                                 // 3D coordinate
  
-    //Index in 1D array for comparison 
-    int m_linIndex;
+    
+    int m_linIndex;                                                                 // Index in 1D array for comparison 
 
-    //Whether visited or not - NOISE otherwise
-    Label m_label;
+    
+    Label m_label;                                                                  // Whether visited or not 
 
-    //id of cluster the point belongs to
-	int m_clusterId;
-    int m_border; 
+    
+	int m_clusterId;                                                                // id of cluster the SEED belongs to 
+    int m_border;                                                                   // whether border point
 
-    //rgb channel values of the point
-	int m_r;
+        
+	int m_r;                                                                        // rgb channel values of the point
 	int m_g;
 	int m_b;
-
-  bool operator==(const DataPoint& o2) const {
-      return m_clusterId == o2.m_clusterId;
-  }
-
+      
 };
-
+/*________________________________________________________________________DATA_POINT________________________________________________________________________*/
