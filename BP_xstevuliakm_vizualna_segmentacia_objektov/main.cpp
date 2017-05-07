@@ -4,9 +4,10 @@
 #include "KinectSensor.h"
 /************************************************************************************************/
 
+
 int main(int argc, char** argv) {
 
-    float scale = 0.4f;
+    float scale = 0.40f;
     KinectSensor sensor;
 
     cv::Mat m(1080, 1920, CV_8UC3);
@@ -28,10 +29,10 @@ int main(int argc, char** argv) {
             cv::resize(m2, m3, size);
             
             DBScan dbs{ m1.rows, m1.cols };                 // init dbscan
-          //m3.data = nullptr;                              // no depth
+            //m3.data = nullptr;                              // no depth
 
             dbs.convertToDataPoint(m1, m3);                 // convert data
-            dbs.DBScanIteration(20, 5.0, 1700, 3);          // run segmentation
+            dbs.DBScanIteration(20, 5.0, 1000, 3);          // run segmentation
             dbs.saveSegmentation(segm);                     // save and label
             dbs.labelBorders(m1);
 
@@ -39,7 +40,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    cv::imshow("Segm image", m1);                           // draw result
+    //cv::imshow("Segm image", m1);                           // draw result
 
     cv::waitKey(0);
 	

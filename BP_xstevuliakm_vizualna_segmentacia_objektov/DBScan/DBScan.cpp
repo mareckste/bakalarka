@@ -15,8 +15,8 @@
 DBScan::DBScan(int rows, int cols)
     :m_imgCols{ cols }, m_imgRows{ rows }, m_numClusters {1}
 {
-    m_allPoints  .reserve(rows * cols);
-    m_allClusters.reserve(40000);
+    m_allPoints  .reserve(rows * cols); // init vectors
+    m_allClusters.reserve(40000);       
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -24,7 +24,7 @@ DBScan::DBScan(int rows, int cols)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DBScan::~DBScan() {
-   for (auto dp : m_allPoints)
+   for (auto dp : m_allPoints)          // delete vectors
         delete dp;
 
     for (auto cs : m_allClusters)
@@ -40,17 +40,17 @@ void DBScan::convertToDataPoint(const cv::Mat& color, const cv::Mat& depth) {
     std::cout << "Converting data" << std::endl;
     double depthPoint;
 
-    for (auto i = 0; i < m_imgRows; i++) {
+    for (auto i = 0; i < m_imgRows; i++) {                  
 		for (auto j = 0; j < m_imgCols; j++) {
             
-            if (depth.data == nullptr) depthPoint = UINT16_MAX;
+            if (depth.data == nullptr) depthPoint = UINT16_MAX;     // if no depth
             
 		    else
-                depthPoint = depth.at<UINT16>(i,j);
+                depthPoint = depth.at<UINT16>(i,j);                 // else store depth
 
             if ((depthPoint == UINT16_MAX)) depthPoint = -1.0;
 
-            DataPoint* dp = new DataPoint(
+            DataPoint* dp = new DataPoint(                          // create point with spatial, depth and color information
                             i,
                             j,
                             depthPoint,
@@ -60,7 +60,7 @@ void DBScan::convertToDataPoint(const cv::Mat& color, const cv::Mat& depth) {
                             i * m_imgCols
                         );
 
-		    m_allPoints.push_back(dp);
+		    m_allPoints.push_back(dp);                              // store created point
 		}
 	}
 }
@@ -75,22 +75,22 @@ bool DBScan::isInRadius(DataPoint *seed, DataPoint *center, DataPoint *potN, dou
     
     double distance_s, distance_c;
 
-    if (center->m_depth && potN->m_depth) {
-        double scale = abs(center->m_depth - potN->m_depth);
+    if (center->m_depth && potN->m_depth) {                     // if two depth points
+        double scale = abs(center->m_depth - potN->m_depth);   
 
-        if (scale > depthThreshold) return false;
+        if (scale > depthThreshold) return false;               // decline point if depth distance is too big
     }
 
-    distance_c = sqrt(    pow(potN->m_r - center->m_r, 2) 
+    distance_c = sqrt(    pow(potN->m_r - center->m_r, 2)       // compute rgb euclidean dist from seed and center
                         + pow(potN->m_g - center->m_g, 2)
                         + pow(potN->m_b - center->m_b, 2)
                      );
 
-    distance_s = sqrt(    pow(potN->m_r - seed->m_r, 2) 
+    distance_s = sqrt(    pow(potN->m_r - seed->m_r, 2)         
                         + pow(potN->m_g - seed->m_g, 2)
                         + pow(potN->m_b - seed->m_b, 2)
                      );
-       
+                                                                // decline point if resulting dist is more than epsilon
     return ((distance_s + distance_c) <= epsilon ? true : false);
 }
 
@@ -102,123 +102,27 @@ void DBScan::assessNeighbour(DataPoint* dp, DataPoint* seed, DataPoint* center, 
                                 double epsilon, double depthThreshold) const {
     
     if (
-        !dp->m_seed && !dp->m_label && 
+        !dp->m_seed && !dp->m_label &&                          // if point has not been discovered yet, check its distance
         isInRadius(seed, center, dp, epsilon, depthThreshold) == true
         ) {
         
-        dp->m_label = DataPoint::VISITED;
+        dp->m_label = DataPoint::VISITED;                       // if approved, mark point and assign it into superpixel
         neighbours->push_back(dp);
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
-// 3D DBSCAN iteration over the given set of RGB pixels
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void DBScan::DBScanIteration(double epsilon, double depthThreshold, unsigned int numOfClusters, 
-                        unsigned int mergingFactor) {
-
-    std::cout << "Segmenting" << std::endl;
-    unsigned int minClusterPoints = (m_imgRows * m_imgCols) / numOfClusters;
-
-    for (int i = 0; i < m_allPoints.size(); i++) {
-    
-        DataPoint *seedPoint   = m_allPoints[i];
-
-        if (seedPoint->m_seed) continue;
-
-        seedPoint->m_clusterId = m_numClusters;
-        seedPoint->m_seed      = seedPoint;
-
-        vector_t* neighbours   = new vector_t;
-
-        neighbours->reserve(200);
-        neighbours->push_back(seedPoint);
-        
-        regionQuery(seedPoint, seedPoint, neighbours, epsilon, depthThreshold);
-
-        unsigned j        = 0;
-        unsigned assigned = 1;
-
-        while (j < neighbours->size()) {
-            
-            neighbours->at(j)->m_seed = seedPoint;
-            assigned++;
-
-            if (assigned < minClusterPoints) 
-                regionQuery(seedPoint, neighbours->at(j), neighbours, epsilon, depthThreshold);
-                        
-            j++;
-        }
-
-        Cluster* currCluster = new Cluster(m_numClusters, neighbours);
-
-        m_allClusters.push_back(currCluster);
-        m_numClusters++;
-    }
-
-    int size = m_allClusters.size();
-    std::cout << "Superpixels before: " << size << std::endl;
-    
-    //////////////////////////////////////////////////////////////////////////////////////////
-    // MERGE
-    //////////////////////////////////////////////////////////////////////////////////////////
-    std::cout << "Merging phase" << std::endl;
-    
-    for (auto i = 0; i < mergingFactor; i++) {
-        DBSmerge(minClusterPoints, &size, numOfClusters, 0);
-        if (size == numOfClusters) break;
-    }
-
-    //////////////////////////////////////////////////////////////////////////////////////////
-    // POSTPROCESSING OPTIONAL
-    //////////////////////////////////////////////////////////////////////////////////////////
-
-    std::cout << "Refining phase" << std::endl;
-   // DBSmerge(minClusterPoints, &size, numOfClusters, 1);
-  
-   ///////////////////////////////////////////////////////////////////////////////////////////
-   // COUNT blob SUPERPIXELS FOR INFO
-   ///////////////////////////////////////////////////////////////////////////////////////////
-    unsigned int num = 0; unsigned int numsmall = 0;
-    std::cout << "Counting clusters" << std::endl;
-
-    for (auto& c: m_allClusters) {
-        if (c->m_id != -1) {
-            num++; 
-            if (c->m_clusterSize < minClusterPoints / 10) 
-                numsmall++;
-        }
-    }
-
-    std::cout << "superpixels after: " << num << " small pts: " << numsmall << std::endl;
-
-    //////////////////////////////////////////////////////////////////////////////////////////
-    // OPTIONAL BORDER POINTS FOR CV::IMAGESHOW
-    //////////////////////////////////////////////////////////////////////////////////////////
-    std::cout << "Counting border points" << std::endl;
-    setBorderPoints();
-
-    //////////////////////////////////////////////////////////////////////////////////////////
-    // RELABELING MODIFIED SUPERPIXELS ID INTO ASCENDING ORDER
-    //////////////////////////////////////////////////////////////////////////////////////////
-    std::cout << "Relabeling id's" << std::endl;
-
-    relabelPts();
-  }
- 
-////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Looks up for 4 neighbours whether possible
 // to form superpixel together
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void DBScan::regionQuery(DataPoint* seed, DataPoint* center, vector_t* neighbours, double epsilon, 
-                            double depthThreshold) {
+void DBScan::regionQuery(DataPoint* seed, DataPoint* center, vector_t* neighbours, double epsilon,
+    double depthThreshold) {
 
     unsigned int centerX = center->m_x;
     unsigned int centerY = center->m_y;
 
-    
+
     if (movePossible(centerX, centerY + 1)) { // right
         DataPoint *dp = m_allPoints[center->m_linIndex + 1];
         if (dp != nullptr)
@@ -243,6 +147,251 @@ void DBScan::regionQuery(DataPoint* seed, DataPoint* center, vector_t* neighbour
             assessNeighbour(dp, seed, center, neighbours, epsilon, depthThreshold);
     }
 
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+// 3D DBSCAN iteration over the given set of RGB pixels
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void DBScan::DBScanIteration(double epsilon, double depthThreshold, unsigned int numOfClusters, 
+                        unsigned int mergingFactor) {
+
+    INIT_TIMER
+    START_TIMER
+    
+    std::cout << "Segmenting" << std::endl;
+    unsigned int minClusterPoints = (m_imgRows * m_imgCols) / numOfClusters;
+
+    for (int i = 0; i < m_allPoints.size(); i++) {                      // for all points
+    
+        DataPoint *seedPoint   = m_allPoints[i];
+
+        if (seedPoint->m_seed) continue;                                // if already assigned to superpixel, skip
+
+        seedPoint->m_clusterId = m_numClusters;                         // label seed with current superpixel
+        seedPoint->m_seed      = seedPoint;
+
+        vector_t* neighbours   = new vector_t;                          // create superpixel vector
+
+        neighbours->reserve(200);
+        neighbours->push_back(seedPoint);                               // store seed as an initial point of the superpixel
+                                                                        // look up for 4 neighbours, whether simmilar 
+        regionQuery(seedPoint, seedPoint, neighbours, epsilon, depthThreshold);
+
+        unsigned j        = 0;
+        unsigned assigned = 1;
+
+        while (j < neighbours->size()) {                                // expand neighbours of neighbours
+            
+            neighbours->at(j)->m_seed = seedPoint;
+            assigned++;
+
+            if (assigned < minClusterPoints) 
+                regionQuery(seedPoint, neighbours->at(j), neighbours, epsilon, depthThreshold);
+                        
+            j++;
+        }
+
+        Cluster* currCluster = new Cluster(m_numClusters, neighbours); // create and store superpixel
+
+        m_allClusters.push_back(currCluster);
+        m_numClusters++;
+    }
+
+    int size = m_allClusters.size();
+    std::cout << "Superpixels before: " << size << std::endl;
+    
+    //////////////////////////////////////////////////////////////////////////////////////////
+    // MERGE
+    //////////////////////////////////////////////////////////////////////////////////////////
+    std::cout << "Merging phase" << std::endl;
+    
+    for (auto i = 0; i < mergingFactor; i++) {                          // merge according to merging factor
+        DBSmerge(minClusterPoints, &size, numOfClusters, 0);
+        if (size == numOfClusters) break;
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////
+    // POSTPROCESSING OPTIONAL
+    //////////////////////////////////////////////////////////////////////////////////////////
+
+    std::cout << "Refining phase" << std::endl;
+    // DBSmerge(minClusterPoints, &size, numOfClusters, 1);
+  
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    // COUNT blob SUPERPIXELS FOR INFO
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    unsigned int num = 0; unsigned int numsmall = 0;
+    std::cout << "Counting clusters" << std::endl;
+
+    for (auto& c: m_allClusters) {
+        if (c->m_id != -1) {
+            num++; 
+            if (c->m_clusterSize < minClusterPoints / 10) 
+                numsmall++;
+        }
+    }
+
+    std::cout << "superpixels after: " << num << " small pts: " << numsmall << std::endl;
+
+    //////////////////////////////////////////////////////////////////////////////////////////
+    // OPTIONAL BORDER POINTS FOR CV::IMAGESHOW
+    //////////////////////////////////////////////////////////////////////////////////////////
+    //std::cout << "Counting border points" << std::endl;
+    //setBorderPoints();
+
+    //////////////////////////////////////////////////////////////////////////////////////////
+    // RELABELING MODIFIED SUPERPIXELS ID INTO ASCENDING ORDER
+    //////////////////////////////////////////////////////////////////////////////////////////
+    std::cout << "Relabeling id's" << std::endl;
+
+    relabelPts();
+    STOP_TIMER("Superpixel segmentation");
+  }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Computes merging distance2 and compares the distance with minimum
+// obtained by far
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void DBScan::computeMergingDistance(const Cluster*const currClust, int nX, int nY, double* min,
+    Cluster** minc) {
+
+    double   dist_c, dist_a, dist_d, dist_2;
+    int      neighClustId = getPointAt(nX, nY)->m_seed->m_clusterId;
+    Cluster* neighClust = m_allClusters[neighClustId - 1];
+
+
+    if (!hasAvgValues(neighClust)) neighClust->computeAverages();
+
+    dist_d = (abs(neighClust->m_avgD - currClust->m_avgD) > 25 ? 10000 : 0); //alpha
+
+    dist_c = (currClust->m_avgR - neighClust->m_avgR)*(currClust->m_avgR - neighClust->m_avgR)  // squared average color dist
+        + (currClust->m_avgB - neighClust->m_avgB)*(currClust->m_avgB - neighClust->m_avgB)
+        + (currClust->m_avgG - neighClust->m_avgG)*(currClust->m_avgG - neighClust->m_avgG);
+
+    dist_a = (currClust->m_avgX - neighClust->m_avgX)*(currClust->m_avgX - neighClust->m_avgX)  // squared average spatial dist
+        + (currClust->m_avgY - neighClust->m_avgY)*(currClust->m_avgY - neighClust->m_avgY);
+
+    dist_2 = dist_c + 2 * dist_a + dist_d;                                                      // weight on spatial dist
+
+    if (dist_2 < *min) {                                                                        // store current minimum if appropriate
+        *min = dist_2;  *minc = neighClust;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Merges 2 superpixels together 
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void DBScan::mergeClusters(Cluster* cluster, Cluster* minc) {
+    Cluster *huge;
+    Cluster *less;
+    DataPoint *hugeSeed;
+
+    huge = (cluster->m_clusterSize > minc->m_clusterSize ? cluster : minc);                     // get smaller superpixel and copy it to bigger one
+    less = (huge == cluster ? minc : cluster);
+
+    hugeSeed = huge->m_clusterMemberPoints->at(0);
+    less->m_id = -1;
+
+    for (int i = 0; i < less->m_clusterMemberPoints->size(); i++) {
+
+        DataPoint *curr = less->m_clusterMemberPoints->at(i);
+
+        curr->m_seed = hugeSeed;
+        huge->m_clusterMemberPoints->push_back(curr);
+    }
+
+    huge->updateSize();                                                                         // recalculate average colours
+
+    huge->m_avgR += less->m_avgR;
+    huge->m_avgR /= 2;
+
+    huge->m_avgG += less->m_avgG;
+    huge->m_avgG /= 2;
+
+    huge->m_avgB += less->m_avgB;
+    huge->m_avgB /= 2;
+
+    huge->m_avgD += less->m_avgD;
+    huge->m_avgD /= 2;
+
+    huge->m_avgX += less->m_avgX;
+    huge->m_avgX /= 2;
+
+    huge->m_avgY += less->m_avgY;
+    huge->m_avgY /= 2;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Mergin approach after initial segmentation
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void DBScan::DBSmerge(unsigned int minClusterPoints, int* size, int numOfClusters, int ppFlag) {
+
+    for (auto& currClust : m_allClusters) {                                                      // postprocessing or merge
+        if ((*size) == numOfClusters) return;
+
+        if (currClust->m_id < 0) continue;
+
+        if (currClust->m_clusterSize < (minClusterPoints /* 1.33*/)) {
+
+            Cluster *minc = nullptr; //6k
+            double minDist = (!ppFlag ? 10000 : 100000);
+
+            if (
+                ppFlag &&
+                (currClust->m_clusterSize >(minClusterPoints / 8))
+                ) continue;
+
+            if (!hasAvgValues(currClust))
+                currClust->computeAverages();
+
+            for (int i = 0; i < currClust->m_clusterMemberPoints->size(); i++) {
+
+                DataPoint *pt = currClust->m_clusterMemberPoints->at(i);
+
+                if (diffNeighbour(pt->m_x, pt->m_y + 1, pt)) { // bottom
+                    if (!ppFlag)
+                        computeMergingDistance(currClust, pt->m_x, pt->m_y + 1, &minDist, &minc);   // find nearest superpixel
+                    else {
+                        getLargestNeighbour(currClust, pt->m_x, pt->m_y + 1, &minDist, &minc);      // find largest superpixel
+                    }
+                }
+
+                if (diffNeighbour(pt->m_x - 1, pt->m_y, pt)) { // left
+                    if (!ppFlag)
+                        computeMergingDistance(currClust, pt->m_x - 1, pt->m_y, &minDist, &minc);
+                    else {
+                        getLargestNeighbour(currClust, pt->m_x - 1, pt->m_y, &minDist, &minc);
+                    }
+                }
+
+                if (diffNeighbour(pt->m_x, pt->m_y - 1, pt)) { // top
+                    if (!ppFlag)
+                        computeMergingDistance(currClust, pt->m_x, pt->m_y - 1, &minDist, &minc);
+                    else {
+                        getLargestNeighbour(currClust, pt->m_x, pt->m_y - 1, &minDist, &minc);
+                    }
+                }
+
+                if (diffNeighbour(pt->m_x + 1, pt->m_y, pt)) { // right
+                    if (!ppFlag)
+                        computeMergingDistance(currClust, pt->m_x + 1, pt->m_y, &minDist, &minc);
+                    else {
+                        getLargestNeighbour(currClust, pt->m_x + 1, pt->m_y, &minDist, &minc);
+                    }
+                }
+
+            }
+
+            if (minc != nullptr && minc != currClust) {                                             // merge if superpixel found 
+                mergeClusters(currClust, minc);
+                (*size)--;
+            }
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -277,7 +426,7 @@ bool DBScan::fromDifferentCluster(DataPoint* dp, int x, int y) {
 
 bool DBScan::diffNeighbour(int x, int y, DataPoint *p) {
     
-    if (movePossible(x, y) && fromDifferentCluster(p, x, y)) 
+    if (movePossible(x, y) && fromDifferentCluster(p, x, y))                                        // if edge detected
         return true;
 
     return false;
@@ -350,152 +499,6 @@ DataPoint* DBScan::getPointAt(int x, int y) {
     
     int index = x * (m_imgCols)+y;
     return m_allPoints[index];
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Computes merging distance2 and compares the distance with minimum
-// obtained by far
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void DBScan::computeMergingDistance(const Cluster*const currClust, int nX, int nY, double* min, 
-                                        Cluster** minc) {
-    
-    double   dist_c, dist_a, dist_d, dist_2;    
-    int      neighClustId = getPointAt(nX, nY)->m_seed->m_clusterId;
-    Cluster* neighClust   = m_allClusters[neighClustId - 1];
-
-    
-    if (!hasAvgValues(neighClust)) neighClust->computeAverages();
-
-    dist_d = (abs(neighClust->m_avgD - currClust->m_avgD) > 25 ? 10000 : 0); //alpha
-    
-    dist_c =      (currClust->m_avgR - neighClust->m_avgR)*(currClust->m_avgR - neighClust->m_avgR)
-                + (currClust->m_avgB - neighClust->m_avgB)*(currClust->m_avgB - neighClust->m_avgB)
-                + (currClust->m_avgG - neighClust->m_avgG)*(currClust->m_avgG - neighClust->m_avgG);
-
-    dist_a =      (currClust->m_avgX - neighClust->m_avgX)*(currClust->m_avgX - neighClust->m_avgX)
-                + (currClust->m_avgY - neighClust->m_avgY)*(currClust->m_avgY - neighClust->m_avgY);
-
-    dist_2 =  dist_c + 2*dist_a + dist_d;
-    
-    if (dist_2 < *min) {
-        *min = dist_2;  *minc = neighClust;
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Merges 2 superpixels together 
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void DBScan::mergeClusters(Cluster* cluster, Cluster* minc) {
-    Cluster *huge;
-    Cluster *less;
-    DataPoint *hugeSeed;
-
-    huge = (cluster->m_clusterSize > minc->m_clusterSize ? cluster : minc);
-    less = (huge == cluster ? minc : cluster);
-
-    hugeSeed = huge->m_clusterMemberPoints->at(0);
-    less->m_id = -1;
-
-    for (int i = 0; i < less->m_clusterMemberPoints->size(); i++) {
-        
-        DataPoint *curr = less->m_clusterMemberPoints->at(i);
-        
-        curr->m_seed    = hugeSeed;
-        huge->m_clusterMemberPoints->push_back(curr);
-    }
-
-    huge->updateSize();
-
-    huge->m_avgR += less->m_avgR;
-    huge->m_avgR /= 2;
-
-    huge->m_avgG += less->m_avgG;
-    huge->m_avgG /= 2;
-
-    huge->m_avgB += less->m_avgB;
-    huge->m_avgB /= 2;
-
-    huge->m_avgD += less->m_avgD;
-    huge->m_avgD /= 2;
-
-    huge->m_avgX += less->m_avgX;
-    huge->m_avgX /= 2;
-
-    huge->m_avgY += less->m_avgY;
-    huge->m_avgY /= 2;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Mergin approach after initial segmentation
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void DBScan::DBSmerge(unsigned int minClusterPoints, int* size, int numOfClusters, int ppFlag) {
-    
-    for (auto& currClust: m_allClusters) {
-        if ((*size) == numOfClusters) return;
-
-        if (currClust->m_id < 0) continue;
-        
-        if (currClust->m_clusterSize < (minClusterPoints /* 1.33*/)) {
-            
-            Cluster *minc  = nullptr; //6k
-            double minDist = (!ppFlag ? 10000 : 100000);
-
-            if (
-                ppFlag && 
-                (currClust->m_clusterSize > (minClusterPoints / 8))
-                ) continue;
-
-            if (!hasAvgValues(currClust)) 
-                currClust->computeAverages();
-
-            for (int i = 0; i < currClust->m_clusterMemberPoints->size(); i++) {
-                
-                DataPoint *pt = currClust->m_clusterMemberPoints->at(i);
-                                
-                if (diffNeighbour(pt->m_x, pt->m_y + 1, pt)) { // bottom
-                    if (!ppFlag)
-                        computeMergingDistance(currClust, pt->m_x, pt->m_y + 1,&minDist, &minc);
-                    else {
-                        getLargestNeighbour(currClust, pt->m_x, pt->m_y + 1, &minDist, &minc);
-                    }
-                }
-
-                if (diffNeighbour(pt->m_x - 1, pt->m_y, pt)) { // left
-                    if (!ppFlag)
-                        computeMergingDistance(currClust, pt->m_x - 1, pt->m_y, &minDist, &minc);
-                    else {
-                        getLargestNeighbour(currClust, pt->m_x - 1, pt->m_y, &minDist, &minc);
-                    }
-                }
-
-                if (diffNeighbour(pt->m_x, pt->m_y - 1, pt)) { // top
-                    if (!ppFlag)
-                        computeMergingDistance(currClust, pt->m_x, pt->m_y - 1, &minDist, &minc);
-                    else {
-                        getLargestNeighbour(currClust, pt->m_x, pt->m_y - 1, &minDist, &minc);
-                    }
-                }
-
-                if (diffNeighbour(pt->m_x + 1, pt->m_y, pt)) { // right
-                    if (!ppFlag)
-                        computeMergingDistance(currClust, pt->m_x + 1, pt->m_y, &minDist, &minc);
-                    else {
-                        getLargestNeighbour(currClust, pt->m_x + 1, pt->m_y, &minDist, &minc);
-                    }
-                }
-                
-            }
-
-            if (minc != nullptr && minc!=currClust) { // merge if minimum found
-                mergeClusters(currClust, minc);
-                (*size)--;
-            }
-        }
-    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
