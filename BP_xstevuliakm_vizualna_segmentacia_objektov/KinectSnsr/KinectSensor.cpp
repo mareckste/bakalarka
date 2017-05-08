@@ -89,8 +89,7 @@ void KinectSensor::initSensor() {
         m_depthBuffer = new UINT16[m_depthWidth * m_depthHeight];
 
         if (m_depthToRGBA && m_rgbaToDepth && m_colorBuffer && m_depthBuffer) {
-            std::cout << "Initialization successfull\nColor resolution = " << m_colorWidth << " x " << m_colorHeight <<
-                "\nDepth resolution = " << m_depthWidth << " x " << m_depthHeight << std::endl;
+            std::cout << "Cakam na data ... ";
         }
         else {
             std::cout << "Memory init FAILED" << std::endl;

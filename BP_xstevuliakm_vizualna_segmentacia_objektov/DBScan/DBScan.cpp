@@ -37,7 +37,6 @@ DBScan::~DBScan() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void DBScan::convertToDataPoint(const cv::Mat& color, const cv::Mat& depth) {
-    std::cout << "Converting data" << std::endl;
     double depthPoint;
 
     for (auto i = 0; i < m_imgRows; i++) {                  
@@ -159,7 +158,6 @@ void DBScan::DBScanIteration(double epsilon, double depthThreshold, unsigned int
     INIT_TIMER
     START_TIMER
     
-    std::cout << "Segmenting" << std::endl;
     unsigned int minClusterPoints = (m_imgRows * m_imgCols) / numOfClusters;
 
     for (int i = 0; i < m_allPoints.size(); i++) {                      // for all points
@@ -199,12 +197,10 @@ void DBScan::DBScanIteration(double epsilon, double depthThreshold, unsigned int
     }
 
     int size = m_allClusters.size();
-    std::cout << "Superpixels before: " << size << std::endl;
     
     //////////////////////////////////////////////////////////////////////////////////////////
     // MERGE
     //////////////////////////////////////////////////////////////////////////////////////////
-    std::cout << "Merging phase" << std::endl;
     
     for (auto i = 0; i < mergingFactor; i++) {                          // merge according to merging factor
         DBSmerge(minClusterPoints, &size, numOfClusters, 0);
@@ -215,38 +211,14 @@ void DBScan::DBScanIteration(double epsilon, double depthThreshold, unsigned int
     // POSTPROCESSING OPTIONAL
     //////////////////////////////////////////////////////////////////////////////////////////
 
-    std::cout << "Refining phase" << std::endl;
     // DBSmerge(minClusterPoints, &size, numOfClusters, 1);
-  
-    ///////////////////////////////////////////////////////////////////////////////////////////
-    // COUNT blob SUPERPIXELS FOR INFO
-    ///////////////////////////////////////////////////////////////////////////////////////////
-    unsigned int num = 0; unsigned int numsmall = 0;
-    std::cout << "Counting clusters" << std::endl;
-
-    for (auto& c: m_allClusters) {
-        if (c->m_id != -1) {
-            num++; 
-            if (c->m_clusterSize < minClusterPoints / 10) 
-                numsmall++;
-        }
-    }
-
-    std::cout << "superpixels after: " << num << " small pts: " << numsmall << std::endl;
-
-    //////////////////////////////////////////////////////////////////////////////////////////
-    // OPTIONAL BORDER POINTS FOR CV::IMAGESHOW
-    //////////////////////////////////////////////////////////////////////////////////////////
-    //std::cout << "Counting border points" << std::endl;
-    //setBorderPoints();
-
+      
     //////////////////////////////////////////////////////////////////////////////////////////
     // RELABELING MODIFIED SUPERPIXELS ID INTO ASCENDING ORDER
     //////////////////////////////////////////////////////////////////////////////////////////
-    std::cout << "Relabeling id's" << std::endl;
 
     relabelPts();
-    STOP_TIMER("Superpixel segmentation");
+    STOP_TIMER("");
   }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -538,7 +510,9 @@ void DBScan::relabelPts() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void DBScan::labelBorders(cv::Mat &image) {
-    std::cout << "Labeling" << std::endl;
+    
+    setBorderPoints();
+    
     for (int i = 0; i < image.rows; i++) {
         for (int j = 0; j < image.cols; j++) {
             if (m_allPoints[j + i*image.cols]->m_border == 1) {
@@ -548,7 +522,6 @@ void DBScan::labelBorders(cv::Mat &image) {
             }
         }
     }
-    std::cout << "Labeling done" << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
